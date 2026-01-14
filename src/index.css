@@ -1,19 +1,264 @@
 @import "tailwindcss";
 
-/* 기본 리셋 + 레이아웃 */
-html,
-body,
-#root {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
+/* =================================================
+   BASE RESET & LAYOUT
+   ================================================= */
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    background-color: var(--color-paper);
+    color: var(--color-text-main);
+    -webkit-font-smoothing: antialiased;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #root {
+    min-height: 100%;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  html {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+/* =================================================
+   THEME TOKENS (Tailwind v4 CSS-first)
+   ================================================= */
+
+@theme {
+  /* =========================================
+     1. COLOR PALETTE
+     ========================================= */
+
+  /* -----------------------------------------
+    Core Colors (Tailwind utility base)
+    ----------------------------------------- */
+  --color-primary: #357cea;          /* main brand blue */
+  --color-paper: #ffffff;
+  --color-text-main: #1a3d6d;
+  --color-text-white: #ffffff;
+
+  /* -----------------------------------------
+    Primary Blue Scale
+    ----------------------------------------- */
+  --color-primary-soft: #eaf1fd;     /* page / glass background */
+  --color-primary-light: #9bb9f3;    /* hover */
+  --color-primary: #357cea;          /* base */
+  --color-primary-dark: #1f4fbf;     /* active */
+  --color-primary-deep: #153a8a;     /* text / strong accent */
+
+  /* -----------------------------------------
+    Mint Scale (Soft Accent)
+    ----------------------------------------- */
+  --color-mint-soft: #ecfbf8;
+  --color-mint-light: #cff6ef;
+  --color-primary-mint: #33c3ad;     /* base mint */
+  --color-mint-dark: #5ed6c4;
+  --color-mint-deep: #2faf9b;
+
+  /* -----------------------------------------
+    Sky Cyan Scale
+    ----------------------------------------- */
+  --color-sky-soft: #e6f8fd;
+  --color-sky-light: #9de3f5;
+  --color-primary-sky: #4bc6e9;      /* base sky */
+  --color-sky-dark: #1ea4cc;
+  --color-sky-deep: #0f6f8f;
+
+  /* -----------------------------------------
+    Teal / Green Scale
+    ----------------------------------------- */
+  --color-teal-soft: #e4f7f3;
+  --color-teal-light: #8ee0d4;
+  --color-primary-teal: #33c3ad;     /* same base as mint */
+  --color-teal-dark: #1e9f8c;
+  --color-teal-deep: #13695c;
+
+  /* -----------------------------------------
+    Paper / Glass
+    ----------------------------------------- */
+  --color-paper-soft: #f6fbfd;
+  --color-paper-glass: rgba(255, 255, 255, 0.3);
+
+  /* -----------------------------------------
+    Text Colors
+    ----------------------------------------- */
+  --color-text-main: #1a3d6d;
+  --color-text-sub: rgba(26, 61, 109, 0.7);
+  --color-text-soft: rgba(26, 61, 109, 0.5);
+  --color-text-invert: rgba(255, 255, 255, 0.85);
+
+  /* -----------------------------------------
+    Glass Accent Backgrounds
+    ----------------------------------------- */
+  --glass-bg-blue: rgba(53, 124, 234, 0.15);
+  --glass-bg-sky: rgba(75, 198, 233, 0.15);
+  --glass-bg-mint: rgba(51, 195, 173, 0.15);
+  /* =========================================
+     2. TYPOGRAPHY
+     ========================================= */
+
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+
+  /* Hero */
+  --text-display-lg: 176px;
+  --text-display-md: 120px;
+  --text-display-sm: 72px;
+
+  /* Body */
+  --text-body-lg: 16px;
+  --text-body-md: 14px;
+  --text-body-sm: 12px;
+
+  /* Label */
+  --text-label-xs: 10px;
+  --text-label-sm: 12px;
+
+  /* =========================================
+     3. SHAPE & UI EFFECTS
+     ========================================= */
+
+  /* Radius */
+  --radius-pill: 9999px;
+  --radius-card: 24px;
+  --radius-soft: 16px;
+
+  /* Glass backgrounds */
+  --glass-bg-blue: rgba(53, 124, 234, 0.15);
+  --glass-bg-sky: rgba(75, 198, 233, 0.15);
+  --glass-bg-mint: rgba(51, 195, 173, 0.15);
+
+  /* Shadows */
+  --shadow-glass-soft: 0 8px 24px rgba(53, 124, 234, 0.15);
+  --shadow-glass-strong: 0 12px 32px rgba(53, 124, 234, 0.25);
+
+  /* =========================================
+     4. ANIMATION
+     ========================================= */
+
+  --animate-fade-up: fade-up 0.6s ease-out forwards;
+  --animate-pop: pop-in 0.25s ease-out forwards;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
 }
 
-/* 기본 폰트 & 배경 (프로젝트에 맞게 나중에 조정) */
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  background-color: #ffffff;
-  color: #000000;
+/* =================================================
+   UTILITIES (선택)
+   ================================================= */
+
+@layer utilities {
+  .glass {
+    background: var(--color-paper-glass);
+    backdrop-filter: blur(20px);
+  }
+
+  .shadow-glass-soft {
+    box-shadow: var(--shadow-glass-soft);
+  }
+
+  .shadow-glass-strong {
+    box-shadow: var(--shadow-glass-strong);
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE, Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .transparent-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  }
+
+  .transparent-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .transparent-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(53,124,234,0.25);
+    border-radius: 999px;
+  }
 }
+
+/* =================================================
+   그 외 custom CSS 추가
+   ================================================= */
+
+  .hero-title {
+    -webkit-text-stroke: 2px color-mix(in srgb, var(--color-primary) 28%, transparent);
+    letter-spacing: 0.06em;
+    font-weight: 700;
+  }
+
+  .hero-letter {
+    display: inline-block;
+
+    color: transparent;
+    -webkit-text-stroke: 2px
+      color-mix(in srgb, var(--color-primary) 28%, transparent);
+
+    opacity: 0;
+    transform: translateY(30px);
+
+    animation: hero-letter-up 0.6s ease-out forwards;
+    transition:
+      color 2s ease,
+      -webkit-text-stroke 2s ease;
+  }
+
+  .hero-letter.is-filled {
+    color: var(--color-primary-light);
+    -webkit-text-stroke: 2px var(--color-primary-light);
+  }
+
+  @keyframes hero-letter-up {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
