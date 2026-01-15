@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Audio from "../assets/FH_AUDIO.png";
+import Image from "../assets/FH_IMAGE.png";
+import Text from "../assets/FH_TEXT.png";
+import Video from "../assets/FH_VIDEO.png";
 
 export default function MainPage() {
   const navigate = useNavigate();
@@ -16,25 +20,25 @@ export default function MainPage() {
       key: "video",
       title: "Video 분석",
       desc: "비디오 기능 최종 구현 후 설명 넣어주세요",
-      accent: "from-[#4BC6E9] to-[#9CEFE2]",
+      accentImg: Video,
     },
     {
       key: "image",
       title: "Image 분석",
       desc: "이미지 기능 최종 구현 후 설명 넣어주세요",
-      accent: "from-[#357CEA] to-[#4BC6E9]",
+      accentImg: Image,
     },
     {
       key: "audio",
       title: "Audio 분석",
       desc: "음성 기능 최종 구현 후 설명 넣어주세요",
-      accent: "from-[#33C3AD] to-[#4BC6E9]",
+      accentImg: Audio,
     },
     {
       key: "text",
       title: "Text 분석",
       desc: "텍스트 기능 최종 구현 후 설명 넣어주세요",
-      accent: "from-[#357CEA] to-[#9CEFE2]",
+      accentImg: Text,
     },
   ];
 
@@ -65,76 +69,67 @@ export default function MainPage() {
       }}
     >
       {/* ================= Navigation ================= */}
-      <nav className="px-6 sm:px-10 lg:px-12 py-8 flex justify-between items-center max-w-6xl mx-auto">
-        <div className="text-base sm:text-lg tracking-wider text-primary/70 font-bold">
-          FAKE HUNTERS
-        </div>
-
-        <div className="hidden sm:flex gap-8 text-sm tracking-wider text-primary">
-          {[
-            { label: "Image", path: "/image" },
-            { label: "Video", path: "/video" },
-            { label: "Audio", path: "/audio" },
-            { label: "Text", path: "/text" },
-          ].map((item) => (
-            <Link
-              key={item.label}
-              to={item.path}
-              className="
-                relative opacity-70 transition-all duration-300
-                hover:opacity-100 hover:text-primary
+      <nav className="px-6 sm:px-10 lg:px-12 py-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-center">
+            <ul className="flex gap-20 text-sm tracking-[0.25em] text-primary/70">
+              {[
+                { label: "IMAGE", path: "/image" },
+                { label: "VIDEO", path: "/video" },
+                { label: "AUDIO", path: "/audio" },
+                { label: "TEXT", path: "/text" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link
+                    to={item.path}
+                    className="
+                relative transition-all duration-300
+                hover:text-primary hover:opacity-100
                 after:absolute after:left-1/2 after:-bottom-2 after:h-[1.5px]
                 after:w-0 after:bg-primary after:rounded-full
                 after:transition-all after:duration-300
                 after:-translate-x-1/2 hover:after:w-full
               "
-            >
-              {item.label}
-            </Link>
-          ))}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </nav>
 
       {/* ================= Hero ================= */}
       <main className="px-6 sm:px-10 lg:px-12 pt-20 pb-20 max-w-6xl mx-auto">
-        <div className="flex justify-center mb-20">
+        <div className="flex justify-center mb-50">
           <h1
             ref={heroRef}
-            className="
-              hero-title
-              text-[4rem]
-              sm:text-[6rem]
-              md:text-[8rem]
-              lg:text-[12rem]
-              leading-[0.9]
-              text-transparent
-              select-none
-            "
-            aria-label="FAKE HUNTERS"
+            className="hero-title text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[12.5rem] leading-[0.9] text-transparent select-none"
           >
-            {"FAKE HUNTERS".split("").map((char, index) => {
-              if (char === " ") return <br key={`br-${index}`} />;
-
-              return (
+            {"FAKE HUNTERS".split("").map((char, i) =>
+              char === " " ? (
+                <br key={i} />
+              ) : (
                 <span
-                  key={index}
+                  key={i}
                   className={`hero-letter ${isScrolled ? "is-filled" : ""}`}
-                  style={{ animationDelay: `${index * 200}ms` }}
+                  style={{ animationDelay: `${i * 200}ms` }}
                 >
                   {char}
                 </span>
-              );
-            })}
+              )
+            )}
           </h1>
         </div>
 
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="text-body-md tracking-[0.2em] mb-6 text-primary/60">
+        <div className="max-w-2xl mx-auto text-center ">
+          <div className="text-2xl tracking-[0.2em] mb-15 text-primary/60">
             어떤 말을 적어야할까요
           </div>
 
-          <div className="space-y-6 sm:space-y-8">
-            <p className="text-sm leading-relaxed text-text-main/80">
+          <div className="space-y-6 sm:space-y-8 ">
+            <p className="text-md leading-relaxed text-text-main/80 mb-15">
               열심히 하고 메인 글을 나중에 적어보아요 우리
               <br />
               파이팅파이팅!
@@ -142,7 +137,7 @@ export default function MainPage() {
               메인 이 글 작성은 제일 나중에!
             </p>
 
-            <p className="text-sm leading-relaxed text-text-main/80">
+            <p className="text-md leading-relaxed text-text-main/80">
               파이썬 매우 이지.
               <br />
               우린 모두 해낼 수 있어요
@@ -158,7 +153,7 @@ export default function MainPage() {
       </main>
 
       {/* ================= Domain Cards ================= */}
-      <section className="px-4 sm:px-10 lg:px-12 pt-10 py-30 max-w-screen-2xl mx-auto ">
+      <section className="px-4 sm:px-10 lg:px-12 py-30 max-w-screen-2xl mx-auto ">
         <div
           className="
             flex sm:grid
@@ -249,8 +244,14 @@ function FadeUpCard({
       }}
     >
       <div className="flex justify-end mb-6">
-        <div
-          className={`h-1.5 w-16 rounded-full bg-linear-to-r ${card.accent}`}
+        <img
+          src={card.accentImg}
+          alt={`${card.title} icon`}
+          className="
+            w-12 h-12
+            object-contain
+            opacity-90
+          "
         />
       </div>
 
