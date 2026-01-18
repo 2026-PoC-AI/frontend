@@ -1,3 +1,4 @@
+// src/store/image/imageStore.js
 import { create } from "zustand";
 
 export const useImageStore = create((set) => ({
