@@ -118,7 +118,7 @@ export default function MainPage() {
                 >
                   {char}
                 </span>
-              )
+              ),
             )}
           </h1>
         </div>
@@ -208,7 +208,7 @@ function FadeUpCard({
           observer.unobserve(el);
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.2 },
     );
 
     observer.observe(el);
