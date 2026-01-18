@@ -1,10 +1,35 @@
 import { useImageStore } from "../../store/image/imageStore.js";
 import useImageUpload from "../../hooks/image/useImageUpload";
+import { analyzeImage } from "../../api/imageApi";
 
 export default function ImageUploadCard() {
-  const { file, previewUrl } = useImageStore();
+  const { file, previewUrl, isAnalyzing, setAnalyzing, setResult } =
+    useImageStore();
   const { inputRef, openFilePicker, onFileChange, onDrop, onDragOver, reset } =
     useImageUpload();
+
+  const handleAnalyze = async () => {
+    if (!file || isAnalyzing) return;
+
+    try {
+      setAnalyzing(true);
+
+      const payload = {
+        task: "deepfake_image",
+        s3Key: "image/inputs/temp-test.png",
+        filename: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      };
+
+      const res = await analyzeImage(payload);
+      setResult(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   return (
     <div
@@ -93,7 +118,8 @@ export default function ImageUploadCard() {
       />
 
       <button
-        disabled={!file}
+        onClick={handleAnalyze}
+        disabled={!file || isAnalyzing}
         className={`
           mt-10 w-full py-4 rounded-pill text-sm font-medium transition-all
           ${
@@ -103,7 +129,7 @@ export default function ImageUploadCard() {
           }
         `}
       >
-        이미지 분석 시작
+        {isAnalyzing ? "분석 중..." : "이미지 분석 시작"}
       </button>
     </div>
   );
