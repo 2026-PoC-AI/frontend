@@ -1,8 +1,11 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Video, Upload, X, CheckCircle2, ArrowLeft, Lock, Zap, Target, Clock } from 'lucide-react';
-import { Button } from '../../../components/ui/Button';
-import { Progress } from '../../../components/ui/Progress';
+import { useNavigate, Link } from 'react-router-dom';
+import { Video, Upload, X, Clock } from 'lucide-react';
+
+interface VideoMetadata {
+    duration: number;
+    size: string;
+}
 
 export function VideoUpload() {
     const navigate = useNavigate();
@@ -10,10 +13,7 @@ export function VideoUpload() {
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [videoMetadata, setVideoMetadata] = useState<{
-        duration: number;
-        size: string;
-    } | null>(null);
+    const [videoMetadata, setVideoMetadata] = useState<VideoMetadata | null>(null);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -95,154 +95,153 @@ export function VideoUpload() {
     };
 
     return (
-        /* 배경 회색 제거: bg-white로 통일 */
-        <div className="max-w-4xl mx-auto px-4 py-8 bg-white min-h-screen">
-            {/* 최상단 줄: 메인으로 돌아가기 버튼 단독 배치 */}
-            <div className="flex justify-start mb-12">
-                <Button 
-                    variant="ghost" 
-                    onClick={() => navigate('/')}
-                    className="hover:bg-gray-100"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    메인으로 돌아가기
-                </Button>
-            </div>
+        <div className="min-h-screen bg-paper relative overflow-x-hidden">
+            {/* 배경 그라데이션 */}
+            <div 
+                className="fixed inset-0 pointer-events-none"
+                style={{
+                    background: `
+                        radial-gradient(
+                            ellipse 80% 70% at 50% 40%,
+                            var(--color-paper) 0%,
+                            rgba(255,255,255,0.95) 25%,
+                            color-mix(in srgb, var(--color-primary-soft) 30%, transparent) 50%,
+                            color-mix(in srgb, var(--color-primary-sky) 40%, transparent) 75%,
+                            color-mix(in srgb, var(--color-primary-mint) 45%, transparent) 100%
+                        )
+                    `,
+                }}
+            />
 
-            {/* 두 번째 줄: 로고와 타이틀 한 줄 배치 */}
-            <div className="flex items-center justify-center gap-6 mb-12">
-                <div className="flex-shrink-0 inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#33C3AD] to-[#9CEFE2] rounded-2xl shadow-sm">
-                    <Video className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+            {/* 네비게이션 */}
+            <nav className="relative px-6 sm:px-10 lg:px-12 py-8 flex justify-between items-center max-w-6xl mx-auto z-10">
+                <Link to="/" className="text-base sm:text-lg tracking-wider text-primary/70 font-bold">
+                    FAKE HUNTERS
+                </Link>
+                <div className="hidden sm:flex gap-8 text-sm tracking-wider text-primary">
+                    <Link to="/audio" className="opacity-70 hover:opacity-100">Audio</Link>
+                    <Link to="/video" className="opacity-100 font-bold border-b-2 border-primary">Video</Link>
+                    <Link to="/image" className="opacity-70 hover:opacity-100">Image</Link>
+                    <Link to="/text" className="opacity-70 hover:opacity-100">Text</Link>
                 </div>
-                <div className="text-left">
-                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 text-gray-900">비디오 파일 업로드</h2>
-                    <p className="text-base sm:text-lg text-gray-500">영상 속 조작된 콘텐츠를 검증합니다</p>
-                </div>
-            </div>
+            </nav>
 
-            <div className="max-w-2xl mx-auto">
-                <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    /* 배경 회색 제거 및 테두리 조정 */
-                    className={`relative border-2 border-dashed rounded-3xl p-8 sm:p-12 transition-all duration-300 ${
-                        isDragging
-                            ? 'border-[#33C3AD] bg-[#33C3AD]/5'
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
-                >
+            {/* 메인 컨텐츠 */}
+            <main className="relative z-10 px-6 pt-10 pb-20 max-w-4xl mx-auto">
+                <div className="text-center mb-16">
+                    <h1 className="text-4xl md:text-5xl font-bold text-text-main mb-4 tracking-tight">
+                        Video Deepfake Detection
+                    </h1>
+                    <p className="text-text-sub text-lg">
+                        의심되는 영상 파일을 업로드하세요. <br className="hidden sm:block"/>
+                        AI가 프레임별로 딥페이크 패턴을 분석하여 진위 여부를 판별합니다.
+                    </p>
+                </div>
+
+                <div className="transition-all duration-500 ease-in-out">
                     {!file ? (
-                        <div className="text-center">
-                            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-[#33C3AD]/10 rounded-full mb-6">
-                                <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-[#33C3AD]" />
+                        <div className="animate-fade-up">
+                            <div 
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                className={`w-full max-w-xl mx-auto p-8 rounded-[24px] bg-white/50 backdrop-blur-md border border-white/60 shadow-glass-soft text-center`}
+                            >
+                                <div className={`border-2 border-dashed rounded-xl p-10 transition-colors ${
+                                    isDragging 
+                                        ? 'border-primary/60 bg-primary/5' 
+                                        : 'border-primary/30 hover:border-primary/60 hover:bg-primary/5'
+                                }`}>
+                                    <input
+                                        type="file"
+                                        accept=".mp4,.avi,.mov,.mkv,video/*"
+                                        onChange={handleFileSelect}
+                                        disabled={uploading}
+                                        className="hidden"
+                                        id="video-upload"
+                                    />
+                                    <label
+                                        htmlFor="video-upload"
+                                        className="cursor-pointer flex flex-col items-center gap-4"
+                                    >
+                                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl">
+                                            🎬
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-bold text-text-main">비디오 파일 업로드</p>
+                                            <p className="text-sm text-text-sub mt-2">
+                                                MP4, AVI, MOV, MKV (최대 500MB)
+                                            </p>
+                                        </div>
+                                        <span className="px-6 py-2 rounded-full bg-primary text-white font-medium hover:bg-primary-dark transition-colors">
+                                            파일 선택하기
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
-                            
-                            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800">파일을 드래그하거나 클릭하여 업로드</h3>
-                            <p className="text-sm sm:text-base text-gray-400 mb-8">
-                                지원 형식: .mp4, .avi, .mov, .mkv<br />
-                                최대 크기: 500MB
-                            </p>
-                            
-                            <label>
-                                <Button
-                                    className="bg-[#33C3AD] hover:bg-[#2bb09c] text-white text-base sm:text-lg px-8 py-6 rounded-xl transition-colors"
-                                >
-                                    파일 선택
-                                </Button>
-                                <input
-                                    type="file"
-                                    accept=".mp4,.avi,.mov,.mkv,video/*"
-                                    onChange={handleFileSelect}
-                                    className="hidden"
-                                />
-                            </label>
                         </div>
                     ) : (
-                        <div className="space-y-6">
-                            {/* 파일 정보 바 배경색 조정 */}
-                            <div className="flex items-center justify-between border border-gray-100 rounded-2xl p-4 shadow-sm">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className="w-12 h-12 bg-[#33C3AD]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <Video className="w-6 h-6 text-[#33C3AD]" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-base sm:text-lg font-medium truncate text-gray-800">{file.name}</p>
-                                        <div className="flex items-center gap-3 text-sm text-gray-400">
-                                            <span>{videoMetadata?.size || 'Loading...'}</span>
-                                            {videoMetadata && (
-                                                <>
-                                                    <span>•</span>
-                                                    <div className="flex items-center gap-1">
-                                                        <Clock className="w-3 h-3" />
-                                                        <span>{formatDuration(videoMetadata.duration)}</span>
-                                                    </div>
-                                                </>
-                                            )}
+                        <div className="w-full max-w-4xl mx-auto animate-fade-up space-y-6">
+                            <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Video className="w-6 h-6 text-primary" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-base sm:text-lg font-medium truncate text-text-main">{file.name}</p>
+                                            <div className="flex items-center gap-3 text-sm text-text-sub">
+                                                <span>{videoMetadata?.size || 'Loading...'}</span>
+                                                {videoMetadata && (
+                                                    <>
+                                                        <span>•</span>
+                                                        <div className="flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            <span>{formatDuration(videoMetadata.duration)}</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
+                                    
+                                    {!uploading && (
+                                        <button
+                                            onClick={handleRemove}
+                                            className="ml-2 p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors flex-shrink-0 text-text-sub"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
-                                
-                                {!uploading && (
+
+                                {uploading && (
+                                    <div className="space-y-3">
+                                        <div className="h-2 bg-paper rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-primary transition-all duration-300"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-sm sm:text-base text-text-sub text-center font-medium">
+                                            업로드 중... {uploadProgress}%
+                                        </p>
+                                    </div>
+                                )}
+
+                                {!uploading && uploadProgress === 0 && (
                                     <button
-                                        onClick={handleRemove}
-                                        className="ml-2 p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors flex-shrink-0 text-gray-400"
+                                        onClick={handleUpload}
+                                        className="w-full px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30"
                                     >
-                                        <X className="w-5 h-5" />
+                                        분석 시작
                                     </button>
                                 )}
                             </div>
-
-                            {uploading && (
-                                <div className="space-y-3">
-                                    <Progress value={uploadProgress} className="h-2 bg-gray-100" />
-                                    <p className="text-sm sm:text-base text-gray-500 text-center font-medium">
-                                        업로드 중... {uploadProgress}%
-                                    </p>
-                                </div>
-                            )}
-
-                            {uploadProgress === 100 && (
-                                <div className="flex items-center justify-center gap-2 text-[#33C3AD] text-base sm:text-lg font-semibold py-2">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    <span>업로드 완료!</span>
-                                </div>
-                            )}
-
-                            {!uploading && uploadProgress === 0 && (
-                                <Button
-                                    onClick={handleUpload}
-                                    className="w-full bg-[#33C3AD] hover:bg-[#2bb09c] text-white text-lg sm:text-xl py-7 rounded-2xl shadow-lg shadow-[#33C3AD]/20 transition-all active:scale-[0.98]"
-                                >
-                                    분석 시작
-                                </Button>
-                            )}
                         </div>
                     )}
                 </div>
-
-                {/* 하단 카드 섹션: 배경 회색 제거 및 border로 구분 */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12">
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center transition-hover hover:shadow-md">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-50 rounded-xl mb-3">
-                            <Zap className="w-6 h-6 text-blue-500" />
-                        </div>
-                        <p className="text-sm sm:text-base font-medium text-gray-700">평균 2초 내 분석</p>
-                    </div>
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center transition-hover hover:shadow-md">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-50 rounded-xl mb-3">
-                            <Lock className="w-6 h-6 text-emerald-500" />
-                        </div>
-                        <p className="text-sm sm:text-base font-medium text-gray-700">안전한 암호화</p>
-                    </div>
-                    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm text-center transition-hover hover:shadow-md">
-                        <div className="inline-flex items-center justify-center w-12 h-12 bg-cyan-50 rounded-xl mb-3">
-                            <Target className="w-6 h-6 text-cyan-500" />
-                        </div>
-                        <p className="text-sm sm:text-base font-medium text-gray-700">99.9% 정확도</p>
-                    </div>
-                </div>
-            </div>
+            </main>
         </div>
     );
 }
