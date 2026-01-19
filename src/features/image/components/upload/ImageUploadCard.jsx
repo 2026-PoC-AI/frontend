@@ -1,10 +1,18 @@
-import { useImageStore } from "../../store/image/imageStore.js";
-import useImageUpload from "../../hooks/image/useImageUpload";
-import { analyzeImage } from "../../api/imageApi";
+import { useImageStore } from "../../../../store/image/imageStore.js";
+import useImageUpload from "../../../../hooks/image/useImageUpload.js";
+import { analyzeImage } from "../../../../api/imageApi.js";
+import { createMockImageResult } from "../../mock/imageMockResult.js";
 
 export default function ImageUploadCard() {
-  const { file, previewUrl, isAnalyzing, setAnalyzing, setResult } =
-    useImageStore();
+  const {
+    file,
+    previewUrl,
+    isAnalyzing,
+    setAnalyzing,
+    setAnalysisId,
+    setResult,
+    setStep,
+  } = useImageStore();
   const { inputRef, openFilePicker, onFileChange, onDrop, onDragOver, reset } =
     useImageUpload();
 
@@ -13,6 +21,7 @@ export default function ImageUploadCard() {
 
     try {
       setAnalyzing(true);
+      setStep("analyze");
 
       const payload = {
         task: "deepfake_image",
@@ -23,10 +32,21 @@ export default function ImageUploadCard() {
       };
 
       const res = await analyzeImage(payload);
-      setResult(res);
+      setAnalysisId(res.analysisId);
+
+      // ✅ AI 미연동 상태이므로 mock 결과로 UI 확인
+
+      setTimeout(() => {
+        const mockResult = createMockImageResult({
+          analysisId: res.analysisId,
+          file,
+        });
+        setResult(mockResult);
+        setAnalyzing(false);
+        setStep("summary");
+      }, 900);
     } catch (e) {
       console.error(e);
-    } finally {
       setAnalyzing(false);
     }
   };
@@ -124,7 +144,7 @@ export default function ImageUploadCard() {
           mt-10 w-full py-4 rounded-pill text-sm font-medium transition-all
           ${
             file
-              ? "bg-primary-dark/80 text-white hover:bg-primary-dark/90 cursor-pointer"
+              ? "bg-primary-dark/80 text-white hover:bg-primary-dark/90 cursor-pointer shadow-[0_12px_40px_rgba(53,124,234,0.22)]"
               : "bg-primary/30 text-white cursor-not-allowed"
           }
         `}
