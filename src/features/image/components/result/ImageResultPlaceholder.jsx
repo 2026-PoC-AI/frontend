@@ -1,19 +1,7 @@
 export default function ImageResultPlaceholder() {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
-      <div
-        className="
-          mb-6
-          w-14 h-14
-          rounded-full
-          flex items-center justify-center
-          bg-gradient-to-br
-          from-primary-soft
-          to-primary-mint/40
-          text-primary
-          opacity-80
-        "
-      >
+      <div className="mb-6 w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-primary-soft to-primary-mint/40 text-primary opacity-90">
         <svg
           width="26"
           height="26"

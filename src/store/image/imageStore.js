@@ -5,17 +5,32 @@ export const useImageStore = create((set) => ({
   file: null,
   previewUrl: null,
   isAnalyzing: false,
+  analysisId: null,
   result: null,
+
+  step: "upload",
+
+  setStep: (step) => set({ step }),
 
   setFile: (file, previewUrl) =>
     set({ file, previewUrl }),
 
   clearFile: () =>
-    set({ file: null, previewUrl: null, result: null }),
+    set({
+      file: null,
+      previewUrl: null,
+      analysisId: null,
+      result: null,
+      step: "upload",
+      isAnalyzing: false,
+    }),
 
   setAnalyzing: (value) =>
     set({ isAnalyzing: value }),
 
-  setResult: (result) =>
-    set({ result }),
+  setAnalysisId: (id) =>
+    set({ analysisId: id }),
+
+  setResult: (r) =>
+    set({ result: r }),
 }));
