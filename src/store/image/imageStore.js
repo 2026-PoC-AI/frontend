@@ -1,12 +1,5 @@
 // src/store/image/imageStore.js
 import { create } from "zustand";
-import {
-  loadImageHistory,
-  pushImageHistory,
-  removeImageHistory,
-  clearImageHistory,
-} from "../../features/image/history/imageHistory";
-
 export const useImageStore = create((set,get) => ({
   file: null,
   previewUrl: null,
@@ -17,7 +10,6 @@ export const useImageStore = create((set,get) => ({
   isReportLoading: false,
   reportError: null,
   step: "upload",
-  history: loadImageHistory(),
 
   setStep: (step) => set({ step }),
 
@@ -54,28 +46,16 @@ export const useImageStore = create((set,get) => ({
     const r = get().result;
     if (!r?.job?.jobUuid) return;
 
-    const analysis = r?.results?.[0];
-    const entry = {
-      jobUuid: r.job.jobUuid,
-      createdAt: r.job.createdAt,
-      filename: r.input?.filename ?? "unknown",
-      status: r.job.status ?? "—",
-      label: analysis?.label ?? "—",
-      riskLevel: analysis?.riskLevel ?? "—",
-      riskScore: analysis?.riskScore ?? 0,
-    };
+    const list = JSON.parse(
+      localStorage.getItem("fakehunters:image:jobUuids") || "[]"
+    );
 
-    const next = pushImageHistory(entry);
-    set({ history: next });
+    if (!list.includes(r.job.jobUuid)) {
+      localStorage.setItem(
+        "fakehunters:image:jobUuids",
+        JSON.stringify([r.job.jobUuid, ...list])
+      );
+    }
   },
 
-  removeHistory: (jobUuid) => {
-    const next = removeImageHistory(jobUuid);
-    set({ history: next });
-  },
-
-  clearHistory: () => {
-    const next = clearImageHistory();
-    set({ history: next });
-  },
 }));
