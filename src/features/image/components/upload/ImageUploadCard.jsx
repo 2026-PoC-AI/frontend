@@ -12,7 +12,6 @@ export default function ImageUploadCard() {
     setAnalysisId,
     setResult,
     setStep,
-    addHistory,
   } = useImageStore();
   const { inputRef, openFilePicker, onFileChange, onDrop, onDragOver, reset } =
     useImageUpload();
@@ -43,7 +42,6 @@ export default function ImageUploadCard() {
           file,
         });
         setResult(mockResult);
-        addHistory(mockResult);
         setAnalyzing(false);
         setStep("summary");
       }, 900);
