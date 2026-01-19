@@ -2,6 +2,7 @@ import { useImageStore } from "../../../../store/image/imageStore.js";
 import useImageUpload from "../../../../hooks/image/useImageUpload.js";
 import { analyzeImage } from "../../../../api/imageApi.js";
 import { createMockImageResult } from "../../mock/imageMockResult.js";
+import useS3Upload from "../../../../hooks/s3/useS3Upload.js";
 
 export default function ImageUploadCard() {
   const {
@@ -15,6 +16,7 @@ export default function ImageUploadCard() {
   } = useImageStore();
   const { inputRef, openFilePicker, onFileChange, onDrop, onDragOver, reset } =
     useImageUpload();
+  const { uploadFile } = useS3Upload();
 
   const handleAnalyze = async () => {
     if (!file || isAnalyzing) return;
@@ -23,9 +25,17 @@ export default function ImageUploadCard() {
       setAnalyzing(true);
       setStep("analyze");
 
+      // S3 업로드
+      const s3Key = await uploadFile({
+        file,
+        domain: "image",
+        stage: "inputs",
+      });
+
+      // 분석 요청
       const payload = {
         task: "deepfake_image",
-        s3Key: "image/inputs/temp-test.png",
+        s3Key,
         filename: file.name,
         fileSize: file.size,
         mimeType: file.type,
@@ -34,8 +44,7 @@ export default function ImageUploadCard() {
       const res = await analyzeImage(payload);
       setAnalysisId(res.analysisId);
 
-      // ✅ AI 미연동 상태이므로 mock 결과로 UI 확인
-
+      // (현재는 mock 결과 유지)
       setTimeout(() => {
         const mockResult = createMockImageResult({
           analysisId: res.analysisId,
@@ -47,6 +56,7 @@ export default function ImageUploadCard() {
       }, 900);
     } catch (e) {
       console.error(e);
+      alert("이미지 업로드 또는 분석 중 오류가 발생했습니다.");
       setAnalyzing(false);
     }
   };
