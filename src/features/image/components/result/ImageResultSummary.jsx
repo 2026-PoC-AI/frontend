@@ -19,8 +19,10 @@ function Badge({ text, tone = "neutral" }) {
   );
 }
 
-export default function ImageResultSummary() {
-  const { result, setStep, clearFile } = useImageStore();
+export default function ImageResultSummary({ resultOverride }) {
+  const { result: storeResult, setStep, clearFile } = useImageStore();
+
+  const result = resultOverride ?? storeResult;
 
   const job = result?.job;
   const input = result?.input;

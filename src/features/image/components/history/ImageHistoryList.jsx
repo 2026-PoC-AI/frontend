@@ -1,4 +1,4 @@
-export default function ImageHistoryList({ items, onOpen, onRemove }) {
+export default function ImageHistoryList({ items, onOpen }) {
   return (
     <div className="space-y-3">
       {items.map((it) => (
@@ -11,8 +11,11 @@ export default function ImageHistoryList({ items, onOpen, onRemove }) {
               {it.filename}
             </p>
             <p className="text-xs text-text-soft mt-1">
-              {it.createdAt ? new Date(it.createdAt).toLocaleString() : "—"} ·{" "}
-              {it.status} · {it.label} · {it.riskLevel} ({it.riskScore})
+              {it.createdAt ? new Date(it.createdAt).toLocaleString() : "—"}
+              {" · "}
+              {it.jobStatus}
+              {" · "}
+              {it.overallRiskLevel ?? "—"}
             </p>
           </div>
 
@@ -22,12 +25,6 @@ export default function ImageHistoryList({ items, onOpen, onRemove }) {
               className="px-4 py-2 rounded-pill bg-primary-dark/80 text-white text-xs hover:bg-primary-dark/90 transition"
             >
               열기
-            </button>
-            <button
-              onClick={() => onRemove(it.jobUuid)}
-              className="px-4 py-2 rounded-pill bg-white/60 text-text-main text-xs hover:bg-white/70 transition"
-            >
-              삭제
             </button>
           </div>
         </div>

@@ -36,9 +36,21 @@ export async function getImageReport(jobUuid) {
   return res.data;
 }
 
+/** 
+ * 히스토리 조회 (신규)
+ * POST /api/v1/images/history
+ */
+export async function getImageHistory(jobUuids) {
+  const res = await axios.post("/api/v1/images/history", {
+    jobUuids,
+  });
+  return res.data; // { items: [...] }
+}
+
 export default {
   analyzeImage,
   getImageAnalysisResult,
   generateImageReport,
   getImageReport,
+  getImageHistory,
 };
