@@ -1,39 +1,38 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Play, Pause, Volume2, VolumeX, Maximize, Download, Share2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Download, Share2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useVideoStore } from '../../../store/videoStore';
+
+// 새로 만든 컴포넌트들 import
+import { VideoPlayer } from './result/VideoPlayer';
+import { FrameTimeline } from './result/FrameTimeline';
+import { SuspiciousFrames } from './result/SuspiciousFrames';
+import { TechniqueDetail } from './result/TechniqueDetail';
 
 export function VideoResults() {
     const navigate = useNavigate();
     const location = useLocation();
     
-    const { file: fileFromState, result: resultFromState } = location.state || {};
+    const { file, fileFromState, result: resultFromState } = location.state || {};
     
-    const file = fileFromState || { name: 'video.mp4', size: 10485760 };
-    const videoRef = useRef(null);
     const [videoUrl, setVideoUrl] = useState('');
 
     const {
         isPlaying,
         isMuted,
         currentTime,
-        hoveredFrame,
         setIsPlaying,
         setIsMuted,
         setCurrentTime,
-        setHoveredFrame,
     } = useVideoStore();
 
     // 비디오 파일 URL 생성
     useEffect(() => {
-        if (fileFromState instanceof File) {
-            const url = URL.createObjectURL(fileFromState);
-            setVideoUrl(url);
-            return () => URL.revokeObjectURL(url);
-        } else if (resultFromState?.analysisId) {
+        if (resultFromState?.analysisId) {
+            // 백엔드에서 ffmpeg로 변환된 파일 사용
             setVideoUrl(`http://localhost:8080/api/video/files/${resultFromState.analysisId}`);
         }
-    }, [fileFromState, resultFromState]);
+    }, [resultFromState]);
 
     // 백엔드 응답을 프론트 형식으로 변환 (useMemo로 무한 루프 방지)
     const results = useMemo(() => {
@@ -75,7 +74,8 @@ export function VideoResults() {
             techniques = techniqueNames.map(name => ({
                 name: techniqueLabels[name] || name,
                 confidence: Math.round(confidenceScore * 100),
-                icon: techniqueIcons[name] || '⚠️'
+                icon: techniqueIcons[name] || '⚠️',
+                anomalyType: name // 원본 키 추가
             }));
         }
         
@@ -83,7 +83,8 @@ export function VideoResults() {
             techniques = [{
                 name: analysisResult.isDeepfake ? '딥페이크 의심' : '정상 영상',
                 confidence: Math.round(confidenceScore * 100),
-                icon: analysisResult.isDeepfake ? '⚠️' : '✅'
+                icon: analysisResult.isDeepfake ? '⚠️' : '✅',
+                anomalyType: 'normal'
             }];
         }
         
@@ -138,35 +139,22 @@ export function VideoResults() {
     const riskColors = getRiskColor();
 
     const togglePlay = () => {
-        if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
-            } else {
-                videoRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
-        }
+        setIsPlaying(!isPlaying);
     };
 
     const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
-        }
+        setIsMuted(!isMuted);
     };
 
-    const handleTimeUpdate = () => {
-        if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime);
+    const handleTimeUpdate = (e) => {
+        if (e.target) {
+            setCurrentTime(e.target.currentTime);
         }
     };
 
     const handleSeek = (e) => {
         const time = parseFloat(e.target.value);
         setCurrentTime(time);
-        if (videoRef.current) {
-            videoRef.current.currentTime = time;
-        }
     };
 
     const formatTime = (seconds) => {
@@ -175,12 +163,14 @@ export function VideoResults() {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const getCurrentFrameConfidence = () => {
-        const frameIndex = Math.floor((currentTime / duration) * results.frameAnalyses.length);
-        return results.frameAnalyses[frameIndex]?.confidence || 50;
+    // 프레임 점프 핸들러
+    const jumpToFrame = (frameIndex) => {
+        const frame = results.frameAnalyses[frameIndex];
+        if (frame) {
+            setCurrentTime(frame.timestamp);
+        }
     };
 
-    const currentFrameConfidence = getCurrentFrameConfidence();
     const suspiciousFrames = results.frameAnalyses.filter(f => f.confidence > 70).length;
     const totalFrames = results.frameAnalyses.length;
 
@@ -290,84 +280,41 @@ export function VideoResults() {
                         </div>
                     </div>
 
-                    {/* 프레임별 신뢰도 분석 */}
-                    <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">
-                        <h3 className="text-xl font-bold text-text-main mb-6">프레임별 신뢰도 분석</h3>
-                        
-                        <div className="space-y-4">
-                            <div className="relative h-32 bg-paper rounded-lg overflow-hidden">
-                                <div className="absolute inset-0 flex items-end">
-                                    {results.frameAnalyses.map((frame, i) => {
-                                        const height = frame.confidence;
-                                        const isHovered = hoveredFrame === i;
-                                        
-                                        return (
-                                            <div
-                                                key={i}
-                                                className="flex-1 cursor-pointer transition-all duration-150"
-                                                style={{ height: `${height}%` }}
-                                                onMouseEnter={() => setHoveredFrame(i)}
-                                                onMouseLeave={() => setHoveredFrame(null)}
-                                            >
-                                                <div
-                                                    className={`h-full transition-all ${
-                                                        height > 70
-                                                            ? 'bg-red-400 hover:bg-red-500'
-                                                            : height > 40
-                                                            ? 'bg-yellow-400 hover:bg-yellow-500'
-                                                            : 'bg-green-400 hover:bg-green-500'
-                                                    } ${isHovered ? 'opacity-100 scale-x-110' : 'opacity-70'}`}
-                                                />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                    {/* 비디오 플레이어 */}
+                    {videoUrl && (
+                        <VideoPlayer
+                            videoUrl={videoUrl}
+                            currentTime={currentTime}
+                            onTimeUpdate={handleTimeUpdate}
+                            frameAnalyses={results.frameAnalyses}
+                            duration={duration}
+                            isPlaying={isPlaying}
+                            isMuted={isMuted}
+                            onPlayPause={togglePlay}
+                            onMuteToggle={toggleMute}
+                            onSeek={handleSeek}
+                        />
+                    )}
 
-                            <div className="flex items-center justify-between text-sm text-text-sub">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 bg-green-400 rounded" />
-                                        <span>안전 (0-40%)</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 bg-yellow-400 rounded" />
-                                        <span>주의 (40-70%)</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 bg-red-400 rounded" />
-                                        <span>위험 (70-100%)</span>
-                                    </div>
-                                </div>
-                                <span className="text-xs text-text-soft">마우스를 올려 상세 정보 확인</span>
-                            </div>
+                    {/* 프레임 타임라인 */}
+                    <FrameTimeline
+                        frameAnalyses={results.frameAnalyses}
+                        currentTime={currentTime}
+                        onFrameClick={jumpToFrame}
+                        duration={duration}
+                    />
 
-                            {hoveredFrame !== null && (
-                                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
-                                    <div className="flex items-center justify-between">
-                                        <span>프레임 #{hoveredFrame} ({formatTime(results.frameAnalyses[hoveredFrame].timestamp)})</span>
-                                        <span className="font-semibold">
-                                            딥페이크 신뢰도: {Math.round(results.frameAnalyses[hoveredFrame].confidence)}%
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    {/* 의심 프레임 Top 5 */}
+                    <SuspiciousFrames
+                        frameAnalyses={results.frameAnalyses}
+                        onFrameClick={jumpToFrame}
+                    />
 
-                    {/* 탐지된 기법 */}
-                    <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">
-                        <h3 className="text-xl font-bold text-text-main mb-6">탐지된 이상 징후</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {results.detectedTechniques.map((item, idx) => (
-                                <div key={idx} className="p-4 rounded-xl bg-paper/50 border border-primary/10 hover:border-primary/30 transition-colors">
-                                    <div className="text-2xl mb-2">{item.icon}</div>
-                                    <div className="text-sm text-text-main font-medium mb-1">{item.name}</div>
-                                    <div className="text-xs text-text-sub">탐지 신뢰도: {item.confidence}%</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {/* 탐지된 기법 상세 */}
+                    <TechniqueDetail
+                        detectedTechniques={results.detectedTechniques}
+                        showAll={false}
+                    />
 
                     {/* 영상 정보 */}
                     <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">

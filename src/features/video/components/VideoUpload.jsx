@@ -41,6 +41,15 @@ export function VideoUpload() {
     const processFile = (selectedFile) => {
         setError(null);
         
+        console.log('File type:', selectedFile.type);
+        console.log('File name:', selectedFile.name);
+        
+        // MP4만 허용하도록 체크
+        if (!selectedFile.type.includes('mp4') && !selectedFile.name.endsWith('.mp4')) {
+            setError('현재 MP4 형식만 지원됩니다. 다른 형식의 파일을 MP4로 변환해주세요.');
+            return;
+        }
+        
         // 파일 크기 체크 (50MB 제한)
         const maxSize = 50 * 1024 * 1024;
         if (selectedFile.size > maxSize) {
@@ -86,10 +95,10 @@ export function VideoUpload() {
 
     const handleAnalyze = async () => {
         if (!file) return;
-
+    
         setUploading(true);
         setError(null);
-
+    
         try {
             // 백엔드 API 호출
             const result = await analyzeVideo(file);
@@ -99,7 +108,8 @@ export function VideoUpload() {
                     name: file.name,
                     size: file.size,
                 },
-                result
+                fileFromState: file,  // File 객체 추가 (VideoResults의 useEffect에서 사용)
+                result: result
             };
             
             // 결과 페이지로 이동
