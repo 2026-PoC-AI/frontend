@@ -1,21 +1,14 @@
 import { useState } from 'react';
 import { Trash2, Archive, CheckCircle2 } from 'lucide-react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
-interface GamifiedActionProps {
-  isDeepfake: boolean;
-  confidence: number;
-  fileName: string;
-  onAction: (action: 'delete' | 'archive') => void;
-}
-
-export function GamifiedAction({ isDeepfake, confidence, fileName, onAction }: GamifiedActionProps) {
+export function GamifiedAction({ isDeepfake, confidence, fileName, onAction }) {
   const [isDragging, setIsDragging] = useState(false);
-  const [hoveredZone, setHoveredZone] = useState<'trash' | 'safe' | null>(null);
+  const [hoveredZone, setHoveredZone] = useState(null);
   const [actionCompleted, setActionCompleted] = useState(false);
 
   // 드래그 중 위치를 계산하여 어떤 영역 위에 있는지 확인하는 함수
-  const handleDrag = (_: any, info: PanInfo) => {
+  const handleDrag = (_, info) => {
     const x = info.point.x;
     const y = info.point.y;
 

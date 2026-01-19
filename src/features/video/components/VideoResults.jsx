@@ -1,67 +1,138 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Play, Pause, Volume2, VolumeX, Maximize, Download, Share2 } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Download, Share2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useVideoStore } from '../../../store/videoStore';
-
-const mockResults = {
-    isDeepfake: Math.random() > 0.5,
-    confidenceScore: 75 + Math.random() * 20,
-    detectedTechniques: [
-        { name: '얼굴 합성 (Face Swap)', confidence: 89, icon: '🎭' },
-        { name: '음성 변조 (Voice Clone)', confidence: 76, icon: '🎤' },
-        { name: 'AI 생성 패턴', confidence: 82, icon: '🤖' },
-    ],
-    frameAnalyses: Array.from({ length: 50 }, (_, i) => ({
-        frameNumber: i,
-        timestamp: i * 2,
-        confidence: 40 + Math.random() * 60,
-        anomalyRegions: Math.random() > 0.7 ? [
-            { x: 100, y: 100, width: 150, height: 150, type: 'face' },
-        ] : [],
-    })),
-    metadata: {
-        duration: 100,
-        fps: 30,
-        resolution: '1920x1080',
-        codec: 'H.264',
-    },
-};
 
 export function VideoResults() {
     const navigate = useNavigate();
     const location = useLocation();
-    const file = location.state?.file || { name: 'video.mp4', size: 10485760 };
-    const videoRef = useRef<HTMLVideoElement>(null);
+    
+    const { file: fileFromState, result: resultFromState } = location.state || {};
+    
+    const file = fileFromState || { name: 'video.mp4', size: 10485760 };
+    const videoRef = useRef(null);
+    const [videoUrl, setVideoUrl] = useState('');
 
     const {
-        results,
         isPlaying,
         isMuted,
         currentTime,
         hoveredFrame,
-        setResults,
         setIsPlaying,
         setIsMuted,
         setCurrentTime,
         setHoveredFrame,
     } = useVideoStore();
 
+    // 비디오 파일 URL 생성
     useEffect(() => {
-        setResults(mockResults);
-        return () => {
-            // cleanup은 선택사항
-        };
-    }, [setResults]);
+        if (fileFromState instanceof File) {
+            const url = URL.createObjectURL(fileFromState);
+            setVideoUrl(url);
+            return () => URL.revokeObjectURL(url);
+        } else if (resultFromState?.analysisId) {
+            setVideoUrl(`http://localhost:8080/api/video/files/${resultFromState.analysisId}`);
+        }
+    }, [fileFromState, resultFromState]);
 
-    if (!results) return null;
+    // 백엔드 응답을 프론트 형식으로 변환 (useMemo로 무한 루프 방지)
+    const results = useMemo(() => {
+        if (!resultFromState) return null;
+        
+        const analysisResult = resultFromState.analysisResult || {};
+        const videoFile = resultFromState.videoFile || {};
+        const frameAnalyses = resultFromState.frameAnalyses || [];
+        
+        const confidenceScore = parseFloat(analysisResult.confidenceScore || '0');
+        
+        // detectedTechniques 파싱
+        let techniques = [];
+        const detectedTechniquesStr = analysisResult.detectedTechniques || '';
+        
+        if (detectedTechniquesStr && detectedTechniquesStr !== 'none') {
+            const techniqueNames = detectedTechniquesStr.split(',').map(t => t.trim());
+            
+            const techniqueIcons = {
+                'face_swap': '🎭',
+                'deepfake': '🤖',
+                'face_boundary_blur': '🔍',
+                'blink_pattern_abnormal': '👁️',
+                'frame_inconsistency': '📹',
+                'lip_sync_mismatch': '👄',
+                'none': '✅',
+            };
+            
+            const techniqueLabels = {
+                'face_swap': '얼굴 합성',
+                'deepfake': 'AI 생성',
+                'face_boundary_blur': '얼굴 경계 흐림',
+                'blink_pattern_abnormal': '눈 깜빡임 이상',
+                'frame_inconsistency': '프레임 불일치',
+                'lip_sync_mismatch': '립싱크 불일치',
+                'none': '이상 없음',
+            };
+            
+            techniques = techniqueNames.map(name => ({
+                name: techniqueLabels[name] || name,
+                confidence: Math.round(confidenceScore * 100),
+                icon: techniqueIcons[name] || '⚠️'
+            }));
+        }
+        
+        if (techniques.length === 0) {
+            techniques = [{
+                name: analysisResult.isDeepfake ? '딥페이크 의심' : '정상 영상',
+                confidence: Math.round(confidenceScore * 100),
+                icon: analysisResult.isDeepfake ? '⚠️' : '✅'
+            }];
+        }
+        
+        return {
+            isDeepfake: analysisResult.isDeepfake || false,
+            confidenceScore: confidenceScore * 100,
+            detectedTechniques: techniques,
+            frameAnalyses: frameAnalyses.map(frame => ({
+                frameNumber: frame.frameNumber || 0,
+                timestamp: parseFloat(frame.timestampSeconds || '0'),
+                confidence: parseFloat(frame.confidenceScore || '0.5') * 100,
+                anomalyRegions: []
+            })),
+            metadata: {
+                duration: Math.max(1, parseFloat(videoFile.durationSeconds || '30')),
+                fps: parseInt(videoFile.fps || '30'),
+                resolution: videoFile.resolution?.replace('X', 'x') || '1920x1080',
+                codec: videoFile.format || 'mp4'
+            },
+            summary: analysisResult.summary || '분석 완료',
+            processingTimeMs: analysisResult.processingTimeMs || 0
+        };
+    }, [resultFromState]);
+    
+    if (!results || !results.metadata) {
+        return (
+            <div className="min-h-screen bg-paper flex items-center justify-center">
+                <div className="text-center p-8">
+                    <h2 className="text-2xl font-bold text-text-main mb-4">
+                        분석 결과를 불러올 수 없습니다
+                    </h2>
+                    <button
+                        onClick={() => navigate('/video')}
+                        className="px-6 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-dark"
+                    >
+                        다시 분석하기
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const confidence = Math.round(results.confidenceScore);
     const duration = results.metadata.duration;
-
+    
     const getRiskColor = () => {
-        if (confidence > 80) return { text: 'text-red-500', accent: '#ef4444' };
-        if (confidence > 50) return { text: 'text-orange-500', accent: '#f59e0b' };
-        return { text: 'text-green-500', accent: '#10b981' };
+        if (confidence > 70) return { text: 'text-red-500', accent: '#ef4444', bg: 'bg-red-50' };
+        if (confidence > 40) return { text: 'text-orange-500', accent: '#f59e0b', bg: 'bg-orange-50' };
+        return { text: 'text-green-500', accent: '#10b981', bg: 'bg-green-50' };
     };
 
     const riskColors = getRiskColor();
@@ -90,7 +161,7 @@ export function VideoResults() {
         }
     };
 
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSeek = (e) => {
         const time = parseFloat(e.target.value);
         setCurrentTime(time);
         if (videoRef.current) {
@@ -98,7 +169,7 @@ export function VideoResults() {
         }
     };
 
-    const formatTime = (seconds: number) => {
+    const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -110,6 +181,8 @@ export function VideoResults() {
     };
 
     const currentFrameConfidence = getCurrentFrameConfidence();
+    const suspiciousFrames = results.frameAnalyses.filter(f => f.confidence > 70).length;
+    const totalFrames = results.frameAnalyses.length;
 
     return (
         <div className="min-h-screen bg-paper relative overflow-x-hidden">
@@ -150,10 +223,15 @@ export function VideoResults() {
                         Video Analysis Results
                     </h1>
                     <p className="text-text-sub text-lg">{file.name}</p>
+                    
+                    {/* 분석 요약 */}
+                    <div className={`mt-4 inline-block px-6 py-3 rounded-full ${riskColors.bg} border ${riskColors.text} border-current`}>
+                        <p className="font-medium">{results.summary}</p>
+                    </div>
                 </div>
 
                 <div className="w-full max-w-5xl mx-auto animate-fade-up space-y-8">
-                    {/* 위험도 점수 및 비디오 플레이어 */}
+                    {/* 위험도 점수 및 분석 정보 */}
                     <div className="flex flex-col md:flex-row gap-6">
                         {/* 위험도 점수 */}
                         <div className="flex-1 p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft flex flex-col items-center justify-center text-center">
@@ -164,84 +242,50 @@ export function VideoResults() {
                             <div className="mt-4 px-4 py-1 rounded-full bg-paper border border-primary/10 text-text-main font-bold">
                                 {results.isDeepfake ? '딥페이크 의심' : '진짜'}
                             </div>
+                            
+                            {/* 의심 프레임 통계 */}
+                            <div className="mt-6 text-sm text-text-sub space-y-1">
+                                <p>분석 프레임: {totalFrames}개</p>
+                                <p className={suspiciousFrames > 0 ? 'text-orange-600 font-medium' : ''}>
+                                    의심 프레임: {suspiciousFrames}개
+                                </p>
+                            </div>
                         </div>
 
-                        {/* 비디오 플레이어 */}
+                        {/* 분석 정보 */}
                         <div className="flex-[1.5] p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft flex flex-col">
-                            <h3 className="text-lg font-medium text-text-sub mb-4">영상 미리보기</h3>
-                            <div className="flex-1 bg-black/90 rounded-xl overflow-hidden flex items-center justify-center min-h-[300px] relative group">
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <button
-                                        onClick={togglePlay}
-                                        className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-colors group-hover:scale-110 duration-200"
-                                    >
-                                        {isPlaying ? (
-                                            <Pause className="w-10 h-10 text-white" />
+                            <h3 className="text-lg font-medium text-text-sub mb-4">분석 정보</h3>
+                            <div className="flex-1 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl overflow-hidden flex items-center justify-center min-h-[300px] relative">
+                                
+                                {/* 분석 완료 정보 */}
+                                <div className="text-center p-8">
+                                    <div className={`w-20 h-20 ${results.isDeepfake ? 'bg-red-100' : 'bg-green-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                                        {results.isDeepfake ? (
+                                            <AlertTriangle className="w-10 h-10 text-red-500" />
                                         ) : (
-                                            <Play className="w-10 h-10 text-white ml-1" />
+                                            <CheckCircle className="w-10 h-10 text-green-500" />
                                         )}
-                                    </button>
+                                    </div>
+                                    <h4 className="text-lg font-semibold text-text-main mb-2">
+                                        분석 완료
+                                    </h4>
+                                    <p className="text-sm text-text-sub mb-4">
+                                        {totalFrames}개 프레임 분석 완료
+                                    </p>
+                                    <div className="inline-block px-4 py-2 rounded-full bg-white/80 text-sm">
+                                        처리 시간: {results.processingTimeMs}ms
+                                    </div>
                                 </div>
 
-                                {/* 의심 영역 표시 */}
-                                {results.frameAnalyses[Math.floor((currentTime / duration) * results.frameAnalyses.length)]?.anomalyRegions.map((region, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="absolute border-2 border-red-500 bg-red-500/20 animate-pulse"
-                                        style={{
-                                            left: `${(region.x / 1920) * 100}%`,
-                                            top: `${(region.y / 1080) * 100}%`,
-                                            width: `${(region.width / 1920) * 100}%`,
-                                            height: `${(region.height / 1080) * 100}%`,
-                                        }}
-                                    >
-                                        <div className="absolute -top-6 left-0 bg-red-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                                            의심 영역
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {/* 신뢰도 표시 */}
-                                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2">
-                                    <span className="text-white text-sm">
-                                        신뢰도: <strong>{Math.round(currentFrameConfidence)}%</strong>
+                                {/* 평균 신뢰도 표시 */}
+                                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
+                                    <span className="text-sm">
+                                        평균 신뢰도: <strong className={riskColors.text}>{confidence}%</strong>
                                     </span>
-                                </div>
-
-                                {/* 컨트롤 바 */}
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="flex items-center gap-3 text-white">
-                                        <button onClick={togglePlay} className="hover:scale-110 transition-transform">
-                                            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                                        </button>
-                                        
-                                        <button onClick={toggleMute} className="hover:scale-110 transition-transform">
-                                            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                                        </button>
-
-                                        <span className="text-sm">{formatTime(currentTime)}</span>
-                                        
-                                        <div className="flex-1 mx-2">
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max={duration}
-                                                value={currentTime}
-                                                onChange={handleSeek}
-                                                className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-                                            />
-                                        </div>
-
-                                        <span className="text-sm">{formatTime(duration)}</span>
-
-                                        <button className="hover:scale-110 transition-transform ml-auto">
-                                            <Maximize className="w-5 h-5" />
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                             <p className="text-xs text-text-soft mt-2 text-right">
-                                * 클릭하여 재생/일시정지
+                                * 비디오 파일은 서버에 안전하게 저장되었습니다
                             </p>
                         </div>
                     </div>
@@ -256,7 +300,6 @@ export function VideoResults() {
                                     {results.frameAnalyses.map((frame, i) => {
                                         const height = frame.confidence;
                                         const isHovered = hoveredFrame === i;
-                                        const isCurrent = Math.floor((currentTime / duration) * results.frameAnalyses.length) === i;
                                         
                                         return (
                                             <div
@@ -265,35 +308,19 @@ export function VideoResults() {
                                                 style={{ height: `${height}%` }}
                                                 onMouseEnter={() => setHoveredFrame(i)}
                                                 onMouseLeave={() => setHoveredFrame(null)}
-                                                onClick={() => {
-                                                    const time = (i / results.frameAnalyses.length) * duration;
-                                                    setCurrentTime(time);
-                                                    if (videoRef.current) {
-                                                        videoRef.current.currentTime = time;
-                                                    }
-                                                }}
                                             >
                                                 <div
                                                     className={`h-full transition-all ${
-                                                        isCurrent
-                                                            ? 'bg-primary'
-                                                            : height > 80
+                                                        height > 70
                                                             ? 'bg-red-400 hover:bg-red-500'
-                                                            : height > 50
+                                                            : height > 40
                                                             ? 'bg-yellow-400 hover:bg-yellow-500'
                                                             : 'bg-green-400 hover:bg-green-500'
-                                                    } ${isHovered ? 'opacity-100' : 'opacity-70'}`}
+                                                    } ${isHovered ? 'opacity-100 scale-x-110' : 'opacity-70'}`}
                                                 />
                                             </div>
                                         );
                                     })}
-                                </div>
-
-                                <div
-                                    className="absolute top-0 bottom-0 w-0.5 bg-primary z-10"
-                                    style={{ left: `${(currentTime / duration) * 100}%` }}
-                                >
-                                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-primary rounded-full" />
                                 </div>
                             </div>
 
@@ -301,26 +328,26 @@ export function VideoResults() {
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 bg-green-400 rounded" />
-                                        <span>안전</span>
+                                        <span>안전 (0-40%)</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 bg-yellow-400 rounded" />
-                                        <span>주의</span>
+                                        <span>주의 (40-70%)</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 bg-red-400 rounded" />
-                                        <span>위험</span>
+                                        <span>위험 (70-100%)</span>
                                     </div>
                                 </div>
-                                <span className="text-xs text-text-soft">클릭하여 해당 시점으로 이동</span>
+                                <span className="text-xs text-text-soft">마우스를 올려 상세 정보 확인</span>
                             </div>
 
                             {hoveredFrame !== null && (
                                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm">
                                     <div className="flex items-center justify-between">
-                                        <span>프레임 #{hoveredFrame}</span>
+                                        <span>프레임 #{hoveredFrame} ({formatTime(results.frameAnalyses[hoveredFrame].timestamp)})</span>
                                         <span className="font-semibold">
-                                            신뢰도: {Math.round(results.frameAnalyses[hoveredFrame].confidence)}%
+                                            딥페이크 신뢰도: {Math.round(results.frameAnalyses[hoveredFrame].confidence)}%
                                         </span>
                                     </div>
                                 </div>
@@ -336,7 +363,7 @@ export function VideoResults() {
                                 <div key={idx} className="p-4 rounded-xl bg-paper/50 border border-primary/10 hover:border-primary/30 transition-colors">
                                     <div className="text-2xl mb-2">{item.icon}</div>
                                     <div className="text-sm text-text-main font-medium mb-1">{item.name}</div>
-                                    <div className="text-xs text-text-sub">신뢰도: {item.confidence}%</div>
+                                    <div className="text-xs text-text-sub">탐지 신뢰도: {item.confidence}%</div>
                                 </div>
                             ))}
                         </div>
@@ -380,17 +407,15 @@ export function VideoResults() {
                         </button>
                         <button className="px-8 py-3 rounded-full bg-white/60 backdrop-blur-md border border-white/60 text-text-main font-medium hover:bg-white/80 transition-all flex items-center gap-2">
                             <Download className="w-4 h-4" />
-                            리포트
+                            리포트 다운로드
                         </button>
                         <button className="px-8 py-3 rounded-full bg-white/60 backdrop-blur-md border border-white/60 text-text-main font-medium hover:bg-white/80 transition-all flex items-center gap-2">
                             <Share2 className="w-4 h-4" />
-                            공유
+                            결과 공유
                         </button>
                     </div>
                 </div>
             </main>
-
-            <video ref={videoRef} className="hidden" onTimeUpdate={handleTimeUpdate} />
         </div>
     );
 }
