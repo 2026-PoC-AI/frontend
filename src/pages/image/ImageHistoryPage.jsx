@@ -14,7 +14,6 @@ export default function ImageHistoryPage() {
   const [selectedJobUuid, setSelectedJobUuid] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  /** 🔹 jobUuid 목록은 일단 local mock or query 기반 */
   const jobUuids = useMemo(() => {
     try {
       return JSON.parse(

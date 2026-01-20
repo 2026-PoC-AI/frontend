@@ -38,7 +38,6 @@ export default function ImageFinalReport() {
   useEffect(() => {
     if (!jobUuid) return;
 
-    // Report 진입 시: history 저장 (최종 결과 기반)
     addToHistoryFromResult();
 
     let alive = true;
@@ -48,14 +47,12 @@ export default function ImageFinalReport() {
         setReportError(null);
         setReportLoading(true);
 
-        // 1) GET 시도
         try {
           const data = await getImageReport(jobUuid);
           if (!alive) return;
           setReport(data);
           return;
         } catch (e) {
-          // 2) 없으면 POST로 생성
           console.log(e);
           const data = await generateImageReport(jobUuid);
           if (!alive) return;
@@ -85,7 +82,6 @@ export default function ImageFinalReport() {
   const guidance = Array.isArray(report?.guidance) ? report.guidance : [];
 
   const onDownloadPdf = () => {
-    // TODO: html2pdf 등으로 연결
     alert("PDF 다운로드는 다음 단계에서 연결할게요.");
   };
 
@@ -133,6 +129,9 @@ export default function ImageFinalReport() {
       <div className="rounded-2xl bg-white/45 backdrop-blur-xl border border-white/35 p-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs tracking-widest text-text-soft">OVERALL RISK</p>
+          <p className="text-xs text-text-soft mt-2">
+            AI가 분석한 전체 이미지 신뢰도 평가입니다.
+          </p>
           <RiskBadge level={overallRiskLevel} />
         </div>
 
@@ -172,9 +171,14 @@ export default function ImageFinalReport() {
             <div className="h-4 w-1/2 bg-white/25 rounded animate-pulse" />
           </div>
         ) : guidance.length > 0 ? (
-          <ul className="text-sm text-text-main space-y-2 list-disc pl-5">
+          <ul className="space-y-3">
             {guidance.map((g, idx) => (
-              <li key={idx}>{String(g)}</li>
+              <li
+                key={idx}
+                className="rounded-xl bg-white/40 border border-white/35 p-4"
+              >
+                <p className="text-sm text-text-main leading-relaxed">{g}</p>
+              </li>
             ))}
           </ul>
         ) : (
