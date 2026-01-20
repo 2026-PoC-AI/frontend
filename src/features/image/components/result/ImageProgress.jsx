@@ -13,7 +13,7 @@ export default function ImageProgress() {
   const current = steps.indexOf(step);
 
   return (
-    <div className="flex items-center justify-center gap-6 mb-12">
+    <div className="flex items-center justify-center gap-6">
       {steps.map((s, i) => (
         <div key={s} className="flex items-center gap-3">
           <div
