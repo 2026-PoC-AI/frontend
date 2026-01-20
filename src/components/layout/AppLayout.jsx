@@ -3,12 +3,11 @@ import Nav from "./Nav";
 
 export default function AppLayout() {
   const location = useLocation();
-
   const isMainPage = location.pathname === "/";
 
   return (
     <div
-      className="w-full min-h-screen overflow-x-hidden bg-paper"
+      className="w-full h-screen overflow-hidden bg-paper flex flex-col" // h-screen과 overflow-hidden 추가
       style={{
         background: `
           radial-gradient(
@@ -23,7 +22,10 @@ export default function AppLayout() {
       }}
     >
       {!isMainPage && <Nav />}
-      <Outlet />
+
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <Outlet />
+      </div>
     </div>
   );
 }

@@ -1,69 +1,64 @@
-export default function ImageRiskRing({ score = 0 }) {
-  const radius = 56;
-  const stroke = 10;
+export default function ImageRiskRing({ score = 0, variant = "default" }) {
+  const isMini = variant === "mini";
+  const radius = isMini ? 36 : 56;
+  const stroke = isMini ? 6 : 10; // 선 두께 소폭 조정
+  const size = radius * 2;
   const normalizedRadius = radius - stroke;
   const circumference = normalizedRadius * 2 * Math.PI;
   const clamped = Math.max(0, Math.min(100, score));
   const offset = circumference - (clamped / 100) * circumference;
 
-  const ringColor =
-    clamped >= 70
-      ? "rgb(239 68 68)"
-      : clamped >= 40
-        ? "rgb(250 204 21)"
-        : "rgb(34 197 94)";
+  const level = clamped >= 70 ? "HIGH" : clamped >= 40 ? "MEDIUM" : "LOW";
 
-  const glow =
-    clamped >= 70
-      ? "shadow-[0_0_50px_rgba(239,68,68,0.25)]"
-      : clamped >= 40
-        ? "shadow-[0_0_50px_rgba(250,204,21,0.22)]"
-        : "shadow-[0_0_50px_rgba(34,197,94,0.20)]";
+  const colors = {
+    HIGH: "stroke-red-500 shadow-red-500/30",
+    MEDIUM: "stroke-amber-400 shadow-amber-400/30",
+    LOW: "stroke-emerald-500 shadow-emerald-500/30",
+  };
 
   return (
-    <div className={`relative mx-auto w-44 h-44 ${glow}`}>
-      <div className="absolute inset-0 rounded-full bg-white/20 blur-xl" />
-      <svg className="relative" height={radius * 2} width={radius * 2}>
-        <defs>
-          <linearGradient id="ringBase" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
-          </linearGradient>
-        </defs>
-
+    <div
+      className={`relative flex items-center justify-center ${isMini ? "w-20 h-20" : "w-44 h-44"}`}
+    >
+      <svg className="transform -rotate-90" width={size} height={size}>
+        {/* Background Track */}
         <circle
-          stroke="url(#ringBase)"
+          stroke="currentColor"
+          className="text-black/5"
           fill="transparent"
           strokeWidth={stroke}
           r={normalizedRadius}
           cx={radius}
           cy={radius}
         />
-
+        {/* Progress Circle */}
         <circle
-          stroke={ringColor}
+          className={`${colors[level]} transition-all duration-1000 ease-out`}
           fill="transparent"
           strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDasharray={circumference}
           strokeDashoffset={offset}
+          strokeLinecap="round"
           r={normalizedRadius}
           cx={radius}
           cy={radius}
-          style={{
-            transition:
-              "stroke-dashoffset 900ms cubic-bezier(.2,.9,.2,1), stroke 600ms ease",
-            filter: "drop-shadow(0 0 10px rgba(0,0,0,0.08))",
-          }}
         />
       </svg>
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <p className="text-[11px] tracking-[0.32em] text-text-soft">RISK</p>
-        <p className="text-4xl font-extrabold text-text-main leading-none">
+      <div className="absolute flex flex-col items-center justify-center">
+        {!isMini && (
+          <span className="text-[10px] font-bold tracking-widest text-text-soft opacity-60">
+            RISK
+          </span>
+        )}
+        <span
+          className={`font-black text-text-main ${isMini ? "text-lg" : "text-4xl"}`}
+        >
           {clamped}
-        </p>
-        <p className="text-[11px] text-text-soft mt-1">/ 100</p>
+        </span>
+        {!isMini && (
+          <span className="text-[10px] font-medium text-text-soft">/ 100</span>
+        )}
       </div>
     </div>
   );
