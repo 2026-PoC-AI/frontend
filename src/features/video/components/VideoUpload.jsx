@@ -1,31 +1,27 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Video, Upload, X, Clock } from 'lucide-react';
-
-interface VideoMetadata {
-    duration: number;
-    size: string;
-}
+import { Video, X, Clock, AlertTriangle } from 'lucide-react';
+import { analyzeVideo } from '../api/videoApi';
 
 export function VideoUpload() {
     const navigate = useNavigate();
     const [isDragging, setIsDragging] = useState(false);
-    const [file, setFile] = useState<File | null>(null);
+    const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [videoMetadata, setVideoMetadata] = useState<VideoMetadata | null>(null);
+    const [error, setError] = useState(null);
+    const [videoMetadata, setVideoMetadata] = useState(null);
 
-    const handleDragOver = useCallback((e: React.DragEvent) => {
+    const handleDragOver = useCallback((e) => {
         e.preventDefault();
         setIsDragging(true);
     }, []);
 
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
+    const handleDragLeave = useCallback((e) => {
         e.preventDefault();
         setIsDragging(false);
     }, []);
 
-    const handleDrop = useCallback((e: React.DragEvent) => {
+    const handleDrop = useCallback((e) => {
         e.preventDefault();
         setIsDragging(false);
         
@@ -35,14 +31,32 @@ export function VideoUpload() {
         }
     }, []);
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e) => {
         const selectedFile = e.target.files?.[0];
         if (selectedFile) {
             processFile(selectedFile);
         }
     };
 
-    const processFile = (selectedFile: File) => {
+    const processFile = (selectedFile) => {
+        setError(null);
+        
+        console.log('File type:', selectedFile.type);
+        console.log('File name:', selectedFile.name);
+        
+        // MP4만 허용하도록 체크
+        if (!selectedFile.type.includes('mp4') && !selectedFile.name.endsWith('.mp4')) {
+            setError('현재 MP4 형식만 지원됩니다. 다른 형식의 파일을 MP4로 변환해주세요.');
+            return;
+        }
+        
+        // 파일 크기 체크 (50MB 제한)
+        const maxSize = 50 * 1024 * 1024;
+        if (selectedFile.size > maxSize) {
+            setError('파일 크기는 50MB 이하여야 합니다.');
+            return;
+        }
+        
         setFile(selectedFile);
         
         const video = document.createElement('video');
@@ -50,6 +64,14 @@ export function VideoUpload() {
         video.onloadedmetadata = () => {
             window.URL.revokeObjectURL(video.src);
             const duration = video.duration;
+            
+            // 영상 길이 체크 (60초 제한)
+            if (duration > 60) {
+                setError('영상 길이는 60초 이하여야 합니다.');
+                setFile(null);
+                return;
+            }
+            
             const size = (selectedFile.size / 1024 / 1024).toFixed(2);
             
             setVideoMetadata({
@@ -57,38 +79,59 @@ export function VideoUpload() {
                 size: size + ' MB',
             });
         };
+        video.onerror = () => {
+            // metadata 파싱 실패는 딥페이크 영상에서 정상 케이스
+            console.warn('metadata read failed, fallback mode');
+
+            const size = (selectedFile.size / 1024 / 1024).toFixed(2);
+
+            setVideoMetadata({
+                duration: 0, // unknown
+                size: size + ' MB',
+            });
+        };
         video.src = URL.createObjectURL(selectedFile);
     };
 
-    const handleUpload = () => {
+    const handleAnalyze = async () => {
         if (!file) return;
-
+    
         setUploading(true);
-        setUploadProgress(0);
-
-        const interval = setInterval(() => {
-            setUploadProgress((prev) => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        setUploading(false);
-                        navigate('/video/analyzing', { state: { file } });
-                    }, 500);
-                    return 100;
-                }
-                return prev + 10;
+        setError(null);
+    
+        try {
+            // 백엔드 API 호출
+            const result = await analyzeVideo(file);
+            
+            const navigationState = {
+                file: {
+                    name: file.name,
+                    size: file.size,
+                },
+                fileFromState: file,  // File 객체 추가 (VideoResults의 useEffect에서 사용)
+                result: result
+            };
+            
+            // 결과 페이지로 이동
+            navigate('/video/results', { 
+                state: navigationState
             });
-        }, 200);
+            
+        } catch (err) {
+            console.error('분석 에러:', err);
+            setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleRemove = () => {
         setFile(null);
         setVideoMetadata(null);
-        setUploadProgress(0);
-        setUploading(false);
+        setError(null);
     };
 
-    const formatDuration = (seconds: number) => {
+    const formatDuration = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -138,6 +181,14 @@ export function VideoUpload() {
                     </p>
                 </div>
 
+                {/* 에러 메시지 */}
+                {error && (
+                    <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center gap-3 max-w-xl mx-auto">
+                        <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                        <p className="text-sm">{error}</p>
+                    </div>
+                )}
+
                 <div className="transition-all duration-500 ease-in-out">
                     {!file ? (
                         <div className="animate-fade-up">
@@ -170,7 +221,7 @@ export function VideoUpload() {
                                         <div>
                                             <p className="text-lg font-bold text-text-main">비디오 파일 업로드</p>
                                             <p className="text-sm text-text-sub mt-2">
-                                                MP4, AVI, MOV, MKV (최대 500MB)
+                                                MP4, AVI, MOV, MKV (최대 50MB, 60초)
                                             </p>
                                         </div>
                                         <span className="px-6 py-2 rounded-full bg-primary text-white font-medium hover:bg-primary-dark transition-colors">
@@ -216,23 +267,21 @@ export function VideoUpload() {
                                 </div>
 
                                 {uploading && (
-                                    <div className="space-y-3">
-                                        <div className="h-2 bg-paper rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-primary transition-all duration-300"
-                                                style={{ width: `${uploadProgress}%` }}
-                                            />
+                                    <div className="space-y-3 mb-6">
+                                        <div className="flex items-center justify-center gap-3">
+                                            <div className="inline-block w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                            <p className="text-sm sm:text-base text-text-sub font-medium">
+                                                AI가 영상을 분석하고 있습니다...
+                                            </p>
                                         </div>
-                                        <p className="text-sm sm:text-base text-text-sub text-center font-medium">
-                                            업로드 중... {uploadProgress}%
-                                        </p>
                                     </div>
                                 )}
 
-                                {!uploading && uploadProgress === 0 && (
+                                {!uploading && (
                                     <button
-                                        onClick={handleUpload}
-                                        className="w-full px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30"
+                                        onClick={handleAnalyze}
+                                        disabled={!videoMetadata}
+                                        className="w-full px-8 py-3 rounded-full bg-primary text-white font-bold hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         분석 시작
                                     </button>

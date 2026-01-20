@@ -2,13 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 
-interface AnalysisStep {
-    id: string;
-    label: string;
-    icon: string;
-}
-
-const analysisSteps: AnalysisStep[] = [
+const analysisSteps = [
     { id: 'upload', label: '영상 업로드 중', icon: '📤' },
     { id: 'extract', label: '프레임 추출 중', icon: '🎞️' },
     { id: 'analyze', label: 'AI 모델 분석 중', icon: '🤖' },

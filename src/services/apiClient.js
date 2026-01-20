@@ -1,7 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const apiClient = {
-    async post<T>(endpoint: string, data: FormData | object): Promise<T> {
+    async post(endpoint, data) {
         const isFormData = data instanceof FormData;
         
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -17,7 +17,7 @@ export const apiClient = {
         return response.json();
     },
 
-    async get<T>(endpoint: string): Promise<T> {
+    async get(endpoint) {
         const response = await fetch(`${API_BASE_URL}${endpoint}`);
         
         if (!response.ok) {
