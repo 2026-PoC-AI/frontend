@@ -19,15 +19,16 @@ function Badge({ text, tone = "neutral" }) {
   );
 }
 
-export default function ImageResultSummary() {
-  const { result, setStep, clearFile } = useImageStore();
+export default function ImageResultSummary({ resultOverride }) {
+  const { result: storeResult, setStep, clearFile } = useImageStore();
+
+  const result = resultOverride ?? storeResult;
 
   const job = result?.job;
   const input = result?.input;
   const analysis = result?.results?.[0];
 
   if (!analysis) {
-    // 결과가 없을 때도 UI는 유지 (mock/연동 전 UX)
     return (
       <div className="h-full flex flex-col items-center justify-center text-center">
         <p className="text-text-main/70 mb-2">아직 결과 데이터가 없습니다.</p>
@@ -39,6 +40,11 @@ export default function ImageResultSummary() {
   }
 
   const isFake = analysis.label === "FAKE";
+
+  const isReportEnabled =
+    job?.status === "COMPLETED" &&
+    Array.isArray(result?.results) &&
+    result.results.length > 0;
 
   return (
     <div className="space-y-8">
@@ -111,15 +117,21 @@ export default function ImageResultSummary() {
       </div>
 
       <button
-        onClick={() => setStep("report")}
-        className="
-          w-full py-4 rounded-pill
-          bg-primary-dark/80 text-white
-          hover:bg-primary-dark/90 transition
-          shadow-[0_12px_40px_rgba(53,124,234,0.22)]
-        "
+        disabled={!isReportEnabled}
+        onClick={() => {
+          if (!isReportEnabled) return;
+          setStep("report");
+        }}
+        className={`
+          w-full py-4 rounded-pill transition
+          ${
+            isReportEnabled
+              ? "bg-primary-dark/80 text-white hover:bg-primary-dark/90 shadow-[0_12px_40px_rgba(53,124,234,0.22)]"
+              : "bg-white/30 text-text-soft cursor-not-allowed"
+          }
+        `}
       >
-        최종 리포트 보기
+        {isReportEnabled ? "최종 리포트 보기" : "분석 결과 수신 대기 중"}
       </button>
 
       <button

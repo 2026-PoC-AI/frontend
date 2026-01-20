@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useImageStore } from "../../store/image/imageStore";
 import ImageUploadCard from "../../features/image/components/upload/ImageUploadCard";
 import ImageResultSummary from "../../features/image/components/result/ImageResultSummary";
@@ -26,10 +27,16 @@ function Stage({ active, children, scale = false }) {
 
 export default function ImagePage() {
   const { step } = useImageStore();
-
+  const nav = useNavigate();
   return (
     <main className="relative px-6 pt-20 pb-32 max-w-4xl mx-auto overflow-hidden">
-      <header className="text-center mb-10">
+      <header className="text-center mb-10 relative">
+        <button
+          onClick={() => nav("/image/history")}
+          className="absolute right-0 top-2 px-4 py-2 rounded-pill bg-primary-deep/60 text-text-white text-xs hover:bg-primary-dark/50 transition"
+        >
+          히스토리
+        </button>
         <h1 className="text-5xl font-extrabold text-text-main mb-4">
           Image Analysis
         </h1>
