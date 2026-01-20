@@ -1,7 +1,6 @@
 import { useImageStore } from "../../../../store/image/imageStore.js";
 import useImageUpload from "../../../../hooks/image/useImageUpload.js";
 import { analyzeImage } from "../../../../api/imageApi.js";
-import { createMockImageResult } from "../../mock/imageMockResult.js";
 import useS3Upload from "../../../../hooks/s3/useS3Upload.js";
 
 export default function ImageUploadCard() {
@@ -11,7 +10,6 @@ export default function ImageUploadCard() {
     isAnalyzing,
     setAnalyzing,
     setAnalysisId,
-    setResult,
     setStep,
   } = useImageStore();
   const { inputRef, openFilePicker, onFileChange, onDrop, onDragOver, reset } =
@@ -43,17 +41,6 @@ export default function ImageUploadCard() {
 
       const res = await analyzeImage(payload);
       setAnalysisId(res.analysisId);
-
-      // (현재는 mock 결과 유지)
-      setTimeout(() => {
-        const mockResult = createMockImageResult({
-          analysisId: res.analysisId,
-          file,
-        });
-        setResult(mockResult);
-        setAnalyzing(false);
-        setStep("summary");
-      }, 900);
     } catch (e) {
       console.error(e);
       alert("이미지 업로드 또는 분석 중 오류가 발생했습니다.");

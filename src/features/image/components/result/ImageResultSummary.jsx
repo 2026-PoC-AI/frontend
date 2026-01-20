@@ -1,6 +1,5 @@
 import { useImageStore } from "../../../../store/image/imageStore";
 import ImageRiskRing from "../viz/ImageRiskRing";
-import ImageConfidenceBreakdown from "../viz/ImageConfidenceBreakdown";
 
 function Badge({ text, tone = "neutral" }) {
   const cls =
@@ -21,7 +20,6 @@ function Badge({ text, tone = "neutral" }) {
 
 export default function ImageResultSummary({ resultOverride }) {
   const { result: storeResult, setStep, clearFile } = useImageStore();
-
   const result = resultOverride ?? storeResult;
 
   const job = result?.job;
@@ -33,7 +31,7 @@ export default function ImageResultSummary({ resultOverride }) {
       <div className="h-full flex flex-col items-center justify-center text-center">
         <p className="text-text-main/70 mb-2">아직 결과 데이터가 없습니다.</p>
         <p className="text-xs text-text-soft">
-          AI 연동 전에는 mock 결과로 화면을 확인해주세요.
+          분석 결과를 불러오는 중이거나 아직 완료되지 않았습니다.
         </p>
       </div>
     );
@@ -42,9 +40,7 @@ export default function ImageResultSummary({ resultOverride }) {
   const isFake = analysis.label === "FAKE";
 
   const isReportEnabled =
-    job?.status === "COMPLETED" &&
-    Array.isArray(result?.results) &&
-    result.results.length > 0;
+    job?.status === "ANALYZED" || job?.status === "REPORT_READY";
 
   return (
     <div className="space-y-8">
@@ -99,13 +95,11 @@ export default function ImageResultSummary({ resultOverride }) {
         </div>
       </div>
 
-      <ImageConfidenceBreakdown breakdown={analysis.breakdown} />
-
       <div className="rounded-2xl bg-white/45 backdrop-blur-xl border border-white/35 p-6">
         <p className="text-xs tracking-widest text-text-soft mb-3">
           AI COMMENTARY
         </p>
-        <p className="text-sm leading-relaxed text-text-main">
+        <p className="text-sm text-text-sub leading-relaxed">
           {analysis.interpretation}
         </p>
       </div>

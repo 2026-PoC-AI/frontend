@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getImageAnalysisResult } from "../../../../api/imageApi";
-import ImageResultSummary from "../result/ImageResultSummary";
+import ImageHistoryPreview from "./ImageHistoryPreview";
 
 export default function ImageHistoryModal({ jobUuid, onClose, onGoFull }) {
   const [data, setData] = useState(null);
@@ -50,8 +50,7 @@ export default function ImageHistoryModal({ jobUuid, onClose, onGoFull }) {
           <p className="text-text-soft">불러오는 중…</p>
         ) : (
           <>
-            {/* 요약 컴포넌트 재사용 */}
-            <ImageResultSummary resultOverride={data} />
+            <ImageHistoryPreview result={data} />
 
             <div className="flex gap-3 mt-8">
               <button

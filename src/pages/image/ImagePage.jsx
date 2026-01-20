@@ -5,7 +5,7 @@ import ImageResultSummary from "../../features/image/components/result/ImageResu
 import ImageFinalReport from "../../features/image/components/result/ImageFinalReport";
 import ImageProgress from "../../features/image/components/result/ImageProgress";
 import ImageAnalyzeSkeleton from "../../features/image/components/viz/ImageAnalyzeSkeleton";
-
+import useImageResultPoll from "../../hooks/image/useImageResultPoll";
 function Stage({ active, children, scale = false }) {
   return (
     <div
@@ -27,6 +27,7 @@ function Stage({ active, children, scale = false }) {
 
 export default function ImagePage() {
   const { step } = useImageStore();
+  useImageResultPoll();
   const nav = useNavigate();
   return (
     <main className="relative px-6 pt-20 pb-32 max-w-4xl mx-auto overflow-hidden">
