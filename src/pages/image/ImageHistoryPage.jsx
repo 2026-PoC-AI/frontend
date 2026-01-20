@@ -53,7 +53,7 @@ export default function ImageHistoryPage() {
   };
 
   return (
-    <main className="relative px-6 pt-24 pb-32 max-w-5xl mx-auto">
+    <main className="relative px-6 pt-10 pb-10 max-w-5xl mx-auto">
       <header className="flex items-end justify-between mb-16 border-b border-black/5 pb-10">
         <div>
           <p className="text-[10px] font-black tracking-[0.4em] text-primary/60 mb-2 uppercase">
