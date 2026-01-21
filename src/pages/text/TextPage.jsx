@@ -32,17 +32,10 @@ export default function TextPage() {
   };
 
   return (
-    <div className="min-h-screen bg-paper relative overflow-x-hidden">
-      {/* 1. 배경 그라데이션 */}
-      <div 
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 80% 70% at 50% 40%, var(--color-paper) 0%, rgba(255,255,255,0.95) 25%, color-mix(in srgb, var(--color-primary-soft) 30%, transparent) 50%, color-mix(in srgb, var(--color-primary-sky) 40%, transparent) 75%, color-mix(in srgb, var(--color-primary-mint) 45%, transparent) 100%)`
-        }} 
-      />
+    
 
-      <main className="relative z-10 px-6 pt-24 pb-20 max-w-4xl mx-auto">
-        <div className="text-center mb-16 animate-fade-up">
+    <main className="relative px-6 pt-15 pb-32 max-w-4xl mx-auto overflow-hidden">
+        <div className="text-center mb-8 animate-fade-up">
           <h1 className="text-5xl font-extrabold text-text-main mb-4 tracking-tight font-noto">
             Text Analysis
           </h1>
@@ -51,7 +44,8 @@ export default function TextPage() {
           </p>
         </div>
 
-        <div className="transition-all duration-500">
+       
+        <div className="transition-all duration-500 mt-3">
           {status === "idle" && (
             <div className="animate-fade-up">
               <TextAnalyzeForm onAnalysisStart={handleAnalysisStart} loading={loading} />
@@ -93,6 +87,6 @@ export default function TextPage() {
           )}
         </div>
       </main>
-    </div>
+    
   );
 }
