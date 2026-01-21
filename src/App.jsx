@@ -1,9 +1,9 @@
 import { Routes, Route } from "react-router-dom";
-import AppLayout from "./components/Layout/AppLayout";
+import AppLayout from "./components/layout/AppLayout";
 import MainPage from "./pages/MainPage";
 import AudioPage from "./pages/audio/AudioPage";
 import ImagePage from "./pages/image/ImagePage";
-import TextPage from './pages/text/TextPage';
+import TextPage from "./pages/text/TextPage";
 import ImageHistoryPage from "./pages/image/ImageHistoryPage";
 import { VideoUpload } from "./features/video/components/VideoUpload";
 import { VideoProgress } from "./features/video/components/VideoProgress";
