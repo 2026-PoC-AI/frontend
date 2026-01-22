@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useImageStore } from "../../store/image/imageStore";
 import ImageUploadCard from "../../features/image/components/upload/ImageUploadCard";
 import ImageResultSummary from "../../features/image/components/result/ImageResultSummary";
-import ImageFinalReport from "../../features/image/components/result/ImageFinalReport";
+import ImageFinalReport from "../../features/image/components/report/ImageFinalReport";
 import ImageProgress from "../../features/image/components/result/ImageProgress";
 import ImageAnalyzeSkeleton from "../../features/image/components/viz/ImageAnalyzeSkeleton";
 import useImageResultPoll from "../../hooks/image/useImageResultPoll";
@@ -31,7 +31,7 @@ export default function ImagePage() {
   const nav = useNavigate();
 
   return (
-    <main className="relative px-6 pt-10 pb-10 max-w-5xl mx-auto flex flex-col h-full overflow-hidden">
+    <main className="relative px-6 pt-10 pb-10 max-w-5xl mx-auto flex flex-col h-full">
       <header className="text-center mb-8 relative shrink-0">
         <button
           onClick={() => nav("/image/history")}

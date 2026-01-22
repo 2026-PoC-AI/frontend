@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useImageStore } from "../../../../store/image/imageStore";
 import { getImageReport, generateImageReport } from "../../../../api/imageApi";
-import ImageReportActions from "../report/ImageReportActions";
+import ImageReportActions from "./ImageReportActions";
 
 function RiskBadge({ level }) {
   const tone =
@@ -49,7 +49,11 @@ export default function ImageFinalReport() {
 
         try {
           const data = await getImageReport(jobUuid);
-          if (!alive) return;
+
+          if (!data) {
+            throw new Error("REPORT_NOT_FOUND");
+          }
+
           setReport(data);
           return;
         } catch (e) {
@@ -78,7 +82,11 @@ export default function ImageFinalReport() {
   const fallbackScore = analysis?.riskScore ?? 0;
 
   const overallRiskLevel = report?.overallRiskLevel ?? fallbackRisk;
-  const summary = report?.summary ?? "리포트 요약을 생성 중입니다…";
+  const summaryText = isReportLoading
+    ? "리포트를 불러오는 중입니다…"
+    : reportError
+      ? "리포트 생성에 실패했습니다."
+      : (report?.summary ?? "리포트 데이터가 없습니다.");
   const guidance = Array.isArray(report?.guidance) ? report.guidance : [];
 
   const onDownloadPdf = () => {
@@ -144,7 +152,7 @@ export default function ImageFinalReport() {
               </div>
             ) : (
               <p className="text-sm text-text-main leading-relaxed">
-                {summary}
+                {summaryText}
               </p>
             )}
 
