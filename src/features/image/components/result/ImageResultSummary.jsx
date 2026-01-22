@@ -1,5 +1,6 @@
 import { useImageStore } from "../../../../store/image/imageStore";
 import ImageRiskRing from "../viz/ImageRiskRing";
+import ImageArtifactGallery from "../viz/ImageArtifactGallery";
 
 function Badge({ text, tone = "neutral" }) {
   const cls =
@@ -103,6 +104,8 @@ export default function ImageResultSummary({ resultOverride }) {
           {analysis.interpretation}
         </p>
       </div>
+
+      <ImageArtifactGallery />
 
       <div className="text-xs text-text-soft space-y-1">
         <p>파일명: {input?.filename ?? "—"}</p>

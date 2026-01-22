@@ -10,6 +10,7 @@ export const useImageStore = create((set,get) => ({
   isReportLoading: false,
   reportError: null,
   step: "upload",
+  artifacts: null,
 
   setStep: (step) => set({ step }),
 
@@ -57,5 +58,4 @@ export const useImageStore = create((set,get) => ({
       );
     }
   },
-
 }));
