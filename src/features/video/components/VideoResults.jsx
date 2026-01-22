@@ -28,11 +28,22 @@ export function VideoResults() {
 
     // 비디오 파일 URL 생성
     useEffect(() => {
+        console.log('resultFromState:', resultFromState);
+        console.log('analysisId:', resultFromState?.analysisId);
+        
         if (resultFromState?.analysisId) {
-            // 백엔드에서 ffmpeg로 변환된 파일 사용
-            setVideoUrl(`http://localhost:8080/api/video/files/${resultFromState.analysisId}`);
+            const url = `http://localhost:8080/api/video/files/${resultFromState.analysisId}`;
+            console.log('Setting video URL to:', url);
+            setVideoUrl(url);
+        } else if (fileFromState) {
+            // analysisId가 없으면 임시로 blob URL 사용
+            console.log('No analysisId, using blob URL');
+            const blobUrl = URL.createObjectURL(fileFromState);
+            setVideoUrl(blobUrl);
+            
+            return () => URL.revokeObjectURL(blobUrl);
         }
-    }, [resultFromState]);
+    }, [resultFromState, fileFromState]);
 
     // 백엔드 응답을 프론트 형식으로 변환 (useMemo로 무한 루프 방지)
     const results = useMemo(() => {
@@ -308,6 +319,7 @@ export function VideoResults() {
                     <SuspiciousFrames
                         frameAnalyses={results.frameAnalyses}
                         onFrameClick={jumpToFrame}
+                        videoUrl={videoUrl}
                     />
 
                     {/* 탐지된 기법 상세 */}
