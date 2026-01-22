@@ -50,10 +50,6 @@ export default function ImageFinalReport() {
         try {
           const data = await getImageReport(jobUuid);
 
-          if (!data) {
-            throw new Error("REPORT_NOT_FOUND");
-          }
-
           setReport(data);
           return;
         } catch (e) {
