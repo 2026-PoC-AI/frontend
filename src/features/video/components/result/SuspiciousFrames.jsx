@@ -11,16 +11,101 @@
  *   - confidence: 딥페이크 신뢰도 (0-100)
  *   - anomalyRegions: 이상 영역 정보
  * @param {Function} props.onFrameClick - 프레임 클릭 시 호출되는 콜백 (frameIndex)
+ * @param {string} props.videoUrl - 비디오 URL (프레임 추출용)
  */
 
 import { AlertTriangle, Clock, Target } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-export function SuspiciousFrames({ frameAnalyses, onFrameClick }) {
+export function SuspiciousFrames({ frameAnalyses, onFrameClick, videoUrl }) {
+    const [frameThumbnails, setFrameThumbnails] = useState({});
+    
     // confidence가 높은 순으로 정렬하여 상위 5개 추출
     const topSuspiciousFrames = [...frameAnalyses]
         .map((frame, index) => ({ ...frame, originalIndex: index }))
         .sort((a, b) => b.confidence - a.confidence)
         .slice(0, 5);
+
+    // 비디오에서 프레임 추출
+    useEffect(() => {
+        console.log('=== 프레임 추출 시작 ===');
+        console.log('videoUrl:', videoUrl);
+        console.log('topSuspiciousFrames:', topSuspiciousFrames);
+        
+        if (!videoUrl || topSuspiciousFrames.length === 0) {
+            console.log('비디오 URL 없음 또는 프레임 없음');
+            return;
+        }
+        
+        const video = document.createElement('video');
+        video.src = videoUrl;
+        video.crossOrigin = 'anonymous';
+        
+        video.onloadedmetadata = () => {
+            console.log('비디오 메타데이터 로드 완료');
+            console.log('비디오 크기:', video.videoWidth, 'x', video.videoHeight);
+            console.log('비디오 길이:', video.duration);
+            
+            const extractFrame = (frameNumber, timestamp) => {
+                return new Promise((resolve, reject) => {
+                    console.log(`프레임 ${frameNumber} 추출 시작 (${timestamp}초)`);
+                    
+                    video.currentTime = timestamp;
+                    
+                    video.onseeked = () => {
+                        console.log(`프레임 ${frameNumber} seek 완료`);
+                        
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(video, 0, 0);
+                            
+                            const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+                            console.log(`프레임 ${frameNumber} 썸네일 생성 완료`);
+                            
+                            resolve({ frameNumber, thumbnailUrl });
+                        } catch (err) {
+                            console.error(`프레임 ${frameNumber} 추출 실패:`, err);
+                            reject(err);
+                        }
+                    };
+                    
+                    video.onerror = (e) => {
+                        console.error(`프레임 ${frameNumber} seek 에러:`, e);
+                        reject(e);
+                    };
+                });
+            };
+            
+            // 상위 프레임들의 썸네일 생성 (순차적으로)
+            const extractSequentially = async () => {
+                const thumbnails = {};
+                
+                for (const frame of topSuspiciousFrames) {
+                    try {
+                        const result = await extractFrame(frame.frameNumber, frame.timestamp);
+                        thumbnails[result.frameNumber] = result.thumbnailUrl;
+                    } catch (err) {
+                        console.error('프레임 추출 실패:', err);
+                    }
+                }
+                
+                console.log('모든 썸네일 생성 완료:', thumbnails);
+                setFrameThumbnails(thumbnails);
+            };
+            
+            extractSequentially();
+        };
+        
+        video.onerror = (e) => {
+            console.error('비디오 로딩 실패:', e);
+            console.error('비디오 에러 상세:', video.error);
+        };
+        
+    }, [videoUrl, topSuspiciousFrames.length]);
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -84,6 +169,7 @@ export function SuspiciousFrames({ frameAnalyses, onFrameClick }) {
             <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                 {topSuspiciousFrames.map((frame, index) => {
                     const riskLevel = getRiskLevel(frame.confidence);
+                    const thumbnailUrl = frameThumbnails[frame.frameNumber];
                     
                     return (
                         <button
@@ -109,16 +195,22 @@ export function SuspiciousFrames({ frameAnalyses, onFrameClick }) {
                                 </span>
                             </div>
 
-                            {/* 섬네일 (placeholder) */}
+                            {/* 섬네일 */}
                             <div className="relative mb-3 aspect-video bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg overflow-hidden">
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="text-center">
-                                        <AlertTriangle className={`w-8 h-8 mx-auto mb-1 ${getTextColor(frame.confidence)}`} />
-                                        <p className="text-xs font-medium text-gray-600">
-                                            프레임 #{frame.frameNumber}
-                                        </p>
+                                {thumbnailUrl ? (
+                                    <img 
+                                        src={thumbnailUrl}
+                                        alt={`프레임 ${frame.frameNumber}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="text-center">
+                                            <div className="w-8 h-8 border-4 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                                            <p className="text-xs text-gray-600">로딩 중...</p>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                                 
                                 {/* Confidence 오버레이 */}
                                 <div className="absolute top-2 right-2 px-2 py-1 bg-black/70 text-white text-xs font-bold rounded">

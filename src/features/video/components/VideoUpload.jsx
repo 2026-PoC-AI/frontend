@@ -10,6 +10,7 @@ export function VideoUpload() {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState(null);
     const [videoMetadata, setVideoMetadata] = useState(null);
+    const [thumbnail, setThumbnail] = useState(null); // 썸네일 상태 추가
 
     const handleDragOver = useCallback((e) => {
         e.preventDefault();
@@ -61,14 +62,33 @@ export function VideoUpload() {
         
         const video = document.createElement('video');
         video.preload = 'metadata';
+        video.crossOrigin = 'anonymous'; // CORS 이슈 방지
+        
+        const videoUrl = URL.createObjectURL(selectedFile);
+        
+        // 썸네일 생성 함수
+        const generateThumbnail = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
+            setThumbnail(thumbnailUrl);
+            
+            URL.revokeObjectURL(videoUrl);
+        };
+        
         video.onloadedmetadata = () => {
-            window.URL.revokeObjectURL(video.src);
             const duration = video.duration;
             
             // 영상 길이 체크 (60초 제한)
             if (duration > 60) {
                 setError('영상 길이는 60초 이하여야 합니다.');
                 setFile(null);
+                URL.revokeObjectURL(videoUrl);
                 return;
             }
             
@@ -78,7 +98,15 @@ export function VideoUpload() {
                 duration: Math.round(duration),
                 size: size + ' MB',
             });
+            
+            // 썸네일 생성을 위해 특정 시점으로 이동
+            video.currentTime = Math.min(1, duration / 2);
         };
+        
+        video.onseeked = () => {
+            generateThumbnail();
+        };
+        
         video.onerror = () => {
             // metadata 파싱 실패는 딥페이크 영상에서 정상 케이스
             console.warn('metadata read failed, fallback mode');
@@ -89,8 +117,23 @@ export function VideoUpload() {
                 duration: 0, // unknown
                 size: size + ' MB',
             });
+            
+            // 메타데이터 로딩 실패 시에도 첫 프레임으로 썸네일 생성 시도
+            video.currentTime = 0;
+            
+            // 강제로 비디오 재생 후 캡처
+            video.muted = true;
+            video.play().then(() => {
+                setTimeout(() => {
+                    video.pause();
+                    generateThumbnail();
+                }, 100);
+            }).catch(() => {
+                URL.revokeObjectURL(videoUrl);
+            });
         };
-        video.src = URL.createObjectURL(selectedFile);
+        
+        video.src = videoUrl;
     };
 
     const handleAnalyze = async () => {
@@ -129,6 +172,7 @@ export function VideoUpload() {
         setFile(null);
         setVideoMetadata(null);
         setError(null);
+        setThumbnail(null); // 썸네일 상태 초기화
     };
 
     const formatDuration = (seconds) => {
@@ -234,36 +278,51 @@ export function VideoUpload() {
                     ) : (
                         <div className="w-full max-w-4xl mx-auto animate-fade-up space-y-6">
                             <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Video className="w-6 h-6 text-primary" />
+                                <div className="flex items-start gap-4 mb-6">
+                                    {/* 썸네일 미리보기 */}
+                                    {thumbnail ? (
+                                        <div className="w-32 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                            <img 
+                                                src={thumbnail} 
+                                                alt="비디오 미리보기" 
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-base sm:text-lg font-medium truncate text-text-main">{file.name}</p>
-                                            <div className="flex items-center gap-3 text-sm text-text-sub">
-                                                <span>{videoMetadata?.size || 'Loading...'}</span>
-                                                {videoMetadata && (
-                                                    <>
-                                                        <span>•</span>
-                                                        <div className="flex items-center gap-1">
-                                                            <Clock className="w-3 h-3" />
-                                                            <span>{formatDuration(videoMetadata.duration)}</span>
-                                                        </div>
-                                                    </>
-                                                )}
+                                    ) : (
+                                        <div className="w-32 h-20 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <Video className="w-8 h-8 text-primary/50" />
+                                        </div>
+                                    )}
+                                    
+                                    {/* 파일 정보 */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-base sm:text-lg font-medium truncate text-text-main">{file.name}</p>
+                                                <div className="flex items-center gap-3 text-sm text-text-sub mt-1">
+                                                    <span>{videoMetadata?.size || 'Loading...'}</span>
+                                                    {videoMetadata && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <Clock className="w-3 h-3" />
+                                                                <span>{formatDuration(videoMetadata.duration)}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
+                                            
+                                            {!uploading && (
+                                                <button
+                                                    onClick={handleRemove}
+                                                    className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors flex-shrink-0 text-text-sub"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                    
-                                    {!uploading && (
-                                        <button
-                                            onClick={handleRemove}
-                                            className="ml-2 p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors flex-shrink-0 text-text-sub"
-                                        >
-                                            <X className="w-5 h-5" />
-                                        </button>
-                                    )}
                                 </div>
 
                                 {uploading && (
