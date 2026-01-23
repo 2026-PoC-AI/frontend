@@ -2,10 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useImageStore } from "../../store/image/imageStore";
 import ImageUploadCard from "../../features/image/components/upload/ImageUploadCard";
 import ImageResultSummary from "../../features/image/components/result/ImageResultSummary";
-import ImageFinalReport from "../../features/image/components/result/ImageFinalReport";
+import ImageFinalReport from "../../features/image/components/report/ImageFinalReport";
 import ImageProgress from "../../features/image/components/result/ImageProgress";
 import ImageAnalyzeSkeleton from "../../features/image/components/viz/ImageAnalyzeSkeleton";
-
+import useImageResultPoll from "../../hooks/image/useImageResultPoll";
 function Stage({ active, children, scale = false }) {
   return (
     <div
@@ -27,27 +27,34 @@ function Stage({ active, children, scale = false }) {
 
 export default function ImagePage() {
   const { step } = useImageStore();
+  useImageResultPoll();
   const nav = useNavigate();
+
   return (
-    <main className="relative px-6 pt-20 pb-32 max-w-4xl mx-auto overflow-hidden">
-      <header className="text-center mb-10 relative">
+    <main className="relative px-6 pt-10 pb-10 max-w-5xl mx-auto flex flex-col h-full">
+      <header className="text-center mb-8 relative shrink-0">
         <button
           onClick={() => nav("/image/history")}
-          className="absolute right-0 top-2 px-4 py-2 rounded-pill bg-primary-deep/60 text-text-white text-xs hover:bg-primary-dark/50 transition"
+          className="absolute right-0 top-0 px-6 py-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-primary text-[11px] font-black tracking-widest hover:bg-white/60 transition-all shadow-sm active:scale-95"
         >
-          히스토리
+          HISTORY
         </button>
-        <h1 className="text-5xl font-extrabold text-text-main mb-4">
+        <p className="text-[10px] font-black tracking-[0.4em] text-primary/60 mb-2 uppercase">
+          AI Content Inspector
+        </p>
+        <h1 className="text-4xl md:text-5xl font-black text-text-main mb-3 tracking-tight">
           Image Analysis
         </h1>
-        <p className="text-text-sub">
-          이미지가 AI로 생성되었거나 조작되었는지 분석합니다.
+        <p className="text-text-sub max-w-lg mx-auto leading-relaxed opacity-70 text-sm">
+          이미지가 생성되었거나 조작되었는지 정밀 분석합니다.
         </p>
       </header>
 
-      <ImageProgress />
+      <div className="mb-8 shrink-0">
+        <ImageProgress />
+      </div>
 
-      <div className="relative h-[720px]">
+      <div className="relative flex-1 min-h-125 animate-in fade-in slide-in-from-bottom-8 duration-1000">
         <Stage active={step === "upload"}>
           <ImageUploadCard />
         </Stage>

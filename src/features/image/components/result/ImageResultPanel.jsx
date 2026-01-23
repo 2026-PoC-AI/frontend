@@ -1,7 +1,7 @@
 import { useImageStore } from "../../../../store/image/imageStore";
 import ImageResultPlaceholder from "./ImageResultPlaceholder";
 import ImageResultSummary from "./ImageResultSummary";
-import ImageFinalReport from "./ImageFinalReport";
+import ImageFinalReport from "../report/ImageFinalReport";
 
 export default function ImageResultPanel() {
   const { result, isAnalyzing, viewMode } = useImageStore();

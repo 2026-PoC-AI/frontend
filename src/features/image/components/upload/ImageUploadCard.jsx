@@ -1,7 +1,6 @@
 import { useImageStore } from "../../../../store/image/imageStore.js";
 import useImageUpload from "../../../../hooks/image/useImageUpload.js";
 import { analyzeImage } from "../../../../api/imageApi.js";
-import { createMockImageResult } from "../../mock/imageMockResult.js";
 import useS3Upload from "../../../../hooks/s3/useS3Upload.js";
 
 export default function ImageUploadCard() {
@@ -11,7 +10,6 @@ export default function ImageUploadCard() {
     isAnalyzing,
     setAnalyzing,
     setAnalysisId,
-    setResult,
     setStep,
   } = useImageStore();
   const { inputRef, openFilePicker, onFileChange, onDrop, onDragOver, reset } =
@@ -25,14 +23,12 @@ export default function ImageUploadCard() {
       setAnalyzing(true);
       setStep("analyze");
 
-      // S3 업로드
       const s3Key = await uploadFile({
         file,
         domain: "image",
         stage: "inputs",
       });
 
-      // 분석 요청
       const payload = {
         task: "deepfake_image",
         s3Key,
@@ -43,17 +39,6 @@ export default function ImageUploadCard() {
 
       const res = await analyzeImage(payload);
       setAnalysisId(res.analysisId);
-
-      // (현재는 mock 결과 유지)
-      setTimeout(() => {
-        const mockResult = createMockImageResult({
-          analysisId: res.analysisId,
-          file,
-        });
-        setResult(mockResult);
-        setAnalyzing(false);
-        setStep("summary");
-      }, 900);
     } catch (e) {
       console.error(e);
       alert("이미지 업로드 또는 분석 중 오류가 발생했습니다.");
@@ -64,102 +49,111 @@ export default function ImageUploadCard() {
   return (
     <div
       className={`
-        relative
-        rounded-[28px]
-        bg-white/55
-        backdrop-blur-2xl
+        relative mx-auto max-w-xl w-full
+        rounded-[32px]
+        bg-white/40
+        backdrop-blur-3xl
         border border-white/60
-        shadow-glass-strong
-        p-12
-        transition-all
-        ${file ? "ring-2 ring-primary/30" : ""}
+        shadow-[0_24px_48px_-12px_rgba(0,0,0,0.08)]
+        p-8 md:p-10
+        transition-all duration-500
+        ${file ? "ring-1 ring-primary/10" : ""}
       `}
     >
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-text-main mb-1">
+      {/* Header: 컴팩트하게 조정 */}
+      <div className="mb-6 text-center">
+        <h2 className="text-xl font-black text-text-main mb-1 tracking-tight">
           이미지 업로드
         </h2>
-        <p className="text-xs text-text-soft">
-          JPG 또는 PNG 파일을 업로드하세요
+        <p className="text-[10px] font-bold text-text-soft/50 tracking-widest uppercase">
+          JPG, PNG, WEBP (MAX 20MB)
         </p>
       </div>
 
+      {/* Upload Zone: 높이를 가변적으로 변경 (min-h-[260px]) */}
       <div
         onClick={!file ? openFilePicker : undefined}
         onDrop={onDrop}
         onDragOver={onDragOver}
         className={`
-          relative
+          relative overflow-hidden
           flex items-center justify-center
-          rounded-[20px]
-          px-10 py-14
-          transition-all
+          rounded-[24px]
+          min-h-[260px]
+          transition-all duration-300
           ${
             file
-              ? "bg-primary-soft/40"
-              : "border-2 border-dashed border-primary/30 hover:border-primary/60 hover:bg-primary-soft/30 cursor-pointer"
+              ? "bg-white/20 shadow-inner"
+              : "border-2 border-dashed border-primary/10 hover:border-primary/30 bg-primary/5 hover:bg-primary/10 cursor-pointer"
           }
         `}
       >
         {!file && (
-          <div className="text-center">
-            <p className="text-sm text-text-main/80 mb-2">
-              클릭하거나 드래그하여 이미지 선택
+          <div className="text-center group p-6">
+            <div className="w-14 h-14 rounded-full bg-white/80 shadow-sm flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                className="text-primary"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+              </svg>
+            </div>
+            <p className="text-sm font-bold text-text-main/70 mb-1">
+              파일을 드래그하거나 클릭하세요
             </p>
-            <p className="text-xs text-text-soft">최대 파일 크기 20MB</p>
+            <p className="text-[10px] text-text-soft/40 font-medium tracking-tight">
+              분석할 이미지를 선택해주세요
+            </p>
           </div>
         )}
 
         {file && (
-          <>
+          <div className="p-2 w-full h-full flex items-center justify-center relative group">
             <img
               src={previewUrl}
               alt="preview"
-              className="max-h-[220px] rounded-[16px] shadow-glass-soft"
+              className="max-h-[240px] w-auto object-contain rounded-xl shadow-xl transition-transform group-hover:scale-[1.01] duration-500"
             />
-
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 reset();
               }}
-              className="
-                absolute top-4 right-4
-                w-9 h-9
-                rounded-full
-                bg-white/80
-                flex items-center justify-center
-                shadow cursor-pointer
-                hover:bg-white
-              "
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center shadow-lg hover:bg-black transition-all active:scale-90 text-xs backdrop-blur-md"
             >
               ✕
             </button>
-          </>
+          </div>
         )}
       </div>
 
       <input
         ref={inputRef}
         type="file"
-        accept="image/png, image/jpeg"
+        accept="image/*"
         className="hidden"
         onChange={onFileChange}
       />
 
+      {/* Button: 컴팩트한 상단 여백 (mt-8) */}
       <button
         onClick={handleAnalyze}
         disabled={!file || isAnalyzing}
         className={`
-          mt-10 w-full py-4 rounded-pill text-sm font-medium transition-all
+          mt-8 w-full py-4 rounded-[18px] text-[13px] font-black tracking-widest uppercase transition-all
           ${
             file
-              ? "bg-primary-dark/80 text-white hover:bg-primary-dark/90 cursor-pointer shadow-[0_12px_40px_rgba(53,124,234,0.22)]"
-              : "bg-primary/30 text-white cursor-not-allowed"
+              ? "bg-primary-dark text-white hover:bg-black shadow-[0_12px_24px_rgba(0,0,0,0.12)] active:scale-[0.98]"
+              : "bg-black/5 text-text-soft/30 cursor-not-allowed border border-black/5"
           }
         `}
       >
-        {isAnalyzing ? "분석 중..." : "이미지 분석 시작"}
+        {isAnalyzing ? "Analyzing..." : "Start Analysis"}
       </button>
     </div>
   );
