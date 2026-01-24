@@ -3,6 +3,8 @@ import { useImageStore } from "../../../../store/image/imageStore";
 import { getImageReport, generateImageReport } from "../../../../api/imageApi";
 import ImageReportActions from "./ImageReportActions";
 
+/* ---------------- Badge ---------------- */
+
 function RiskBadge({ level }) {
   const tone =
     level === "HIGH"
@@ -20,6 +22,8 @@ function RiskBadge({ level }) {
   );
 }
 
+/* ---------------- Main ---------------- */
+
 export default function ImageFinalReport() {
   const {
     setStep,
@@ -35,55 +39,74 @@ export default function ImageFinalReport() {
 
   const jobUuid = result?.job?.jobUuid;
 
+  /* ---------------- Load Report ---------------- */
+
   useEffect(() => {
     if (!jobUuid) return;
 
-    addToHistoryFromResult();
-
     let alive = true;
 
-    const run = async () => {
+    addToHistoryFromResult();
+
+    const loadReport = async () => {
       try {
-        setReportError(null);
         setReportLoading(true);
+        setReportError(null);
 
+        /* 1️⃣ 먼저 생성 시도 */
         try {
-          const data = await getImageReport(jobUuid);
+          const created = await generateImageReport(jobUuid);
 
-          setReport(data);
+          if (!alive) return;
+
+          setReport(created);
           return;
         } catch (e) {
-          console.log(e);
-          const data = await generateImageReport(jobUuid);
-          if (!alive) return;
-          setReport(data);
+          console.warn("Report already exists. Try GET.", e);
         }
-      } catch (e) {
-        console.log(e);
+
+        /* 2️⃣ 생성 실패 시 조회 */
+        const fetched = await getImageReport(jobUuid);
+
         if (!alive) return;
-        setReportError("리포트를 생성하는 중 오류가 발생했습니다.");
+
+        setReport(fetched);
+      } catch (e) {
+        console.error(e);
+
+        if (!alive) return;
+
+        setReportError("리포트를 불러오는 중 오류가 발생했습니다.");
       } finally {
-        setReportLoading(false);
+        if (alive) setReportLoading(false);
       }
     };
 
-    run();
+    loadReport();
+
     return () => {
       alive = false;
     };
   }, [jobUuid]);
 
+  /* ---------------- Fallback ---------------- */
+
   const analysis = result?.results?.[0];
+
   const fallbackRisk = analysis?.riskLevel ?? "—";
   const fallbackScore = analysis?.riskScore ?? 0;
 
   const overallRiskLevel = report?.overallRiskLevel ?? fallbackRisk;
+
   const summaryText = isReportLoading
-    ? "리포트를 불러오는 중입니다…"
+    ? "리포트를 생성 중입니다…"
     : reportError
       ? "리포트 생성에 실패했습니다."
       : (report?.summary ?? "리포트 데이터가 없습니다.");
+
   const guidance = Array.isArray(report?.guidance) ? report.guidance : [];
+
+  /* ---------------- Actions ---------------- */
 
   const onDownloadPdf = () => {
     alert("PDF 다운로드는 다음 단계에서 연결할게요.");
@@ -91,6 +114,7 @@ export default function ImageFinalReport() {
 
   const onShare = async () => {
     const shareUrl = `${window.location.origin}/image/history?job=${jobUuid}`;
+
     try {
       if (navigator.share) {
         await navigator.share({
@@ -107,18 +131,23 @@ export default function ImageFinalReport() {
     }
   };
 
+  /* ---------------- Render ---------------- */
+
   return (
     <div className="space-y-7">
+      {/* Header */}
       <header className="flex justify-between items-start">
         <div>
           <p className="text-xs tracking-widest text-text-soft mb-2">
             FINAL REPORT
           </p>
+
           <h2 className="text-2xl font-extrabold text-text-main leading-tight">
             최종 신뢰 리포트
           </h2>
+
           <p className="text-sm text-text-soft mt-2">
-            분석 결과를 기반으로 LLM이 작성한 최종 요약/가이드입니다.
+            분석 결과를 기반으로 생성된 AI 리포트입니다.
           </p>
         </div>
 
@@ -130,12 +159,11 @@ export default function ImageFinalReport() {
         </button>
       </header>
 
+      {/* Summary */}
       <div className="rounded-2xl bg-white/45 backdrop-blur-xl border border-white/35 p-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs tracking-widest text-text-soft">OVERALL RISK</p>
-          <p className="text-xs text-text-soft mt-2">
-            AI가 분석한 전체 이미지 신뢰도 평가입니다.
-          </p>
+
           <RiskBadge level={overallRiskLevel} />
         </div>
 
@@ -159,6 +187,7 @@ export default function ImageFinalReport() {
 
           <div className="text-right">
             <p className="text-xs text-text-soft">RISK SCORE</p>
+
             <p className="text-3xl font-extrabold text-text-main">
               {fallbackScore}
             </p>
@@ -166,6 +195,7 @@ export default function ImageFinalReport() {
         </div>
       </div>
 
+      {/* Guidance */}
       <div className="rounded-2xl bg-white/45 backdrop-blur-xl border border-white/35 p-6">
         <p className="text-xs tracking-widest text-text-soft mb-3">GUIDANCE</p>
 
@@ -190,6 +220,7 @@ export default function ImageFinalReport() {
         )}
       </div>
 
+      {/* Footer */}
       <div className="text-xs text-text-soft">
         ※ 본 리포트는 자동 생성된 요약으로 참고용입니다.
       </div>
