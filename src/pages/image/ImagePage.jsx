@@ -40,7 +40,7 @@ export default function ImagePage() {
           HISTORY
         </button>
         <p className="text-[10px] font-black tracking-[0.4em] text-primary/60 mb-2 uppercase">
-          AI Content Inspector
+          IMAGE Inspector
         </p>
         <h1 className="text-4xl md:text-5xl font-black text-text-main mb-3 tracking-tight">
           Image Analysis
