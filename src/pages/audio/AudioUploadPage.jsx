@@ -62,13 +62,8 @@ export default function AudioUploadPage() {
   };
 
   return (
-    <main className="relative h-full flex items-center justify-center px-6 text-center">
-      <motion.section
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.2, 0.9, 0.2, 1] }}
-        className="relative z-10 w-full max-w-xl"
-      >
+    <main className="relative px-6 pt-10 pb-10 max-w-4xl mx-auto flex items-center justify-center text-center">
+      <section className="relative z-10 w-full max-w-xl">
         {/* Header */}
         <p className="text-[10px] font-black tracking-[0.4em] text-primary/60 mb-2">
           AUDIO INSPECTOR
@@ -83,75 +78,76 @@ export default function AudioUploadPage() {
         </p>
 
         {/* Upload Booth */}
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          className={`
+        <div className="transition-all duration-500 ease-in-out">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={` animate-fade-up
             rounded-[32px] p-10 backdrop-blur-xl
             border border-white/60 shadow-glass-strong
             transition-all duration-300
             ${dragging ? "bg-primary/10 scale-[1.02]" : "bg-white/50"}
           `}
-        >
-          {/* Mic + Waveform */}
-          <div className="flex flex-col items-center gap-6 mb-10">
-            <motion.div
-              animate={{ scale: file ? 1 : [1, 1.05, 1] }}
-              transition={{
-                repeat: file ? 0 : Infinity,
-                duration: 2.5,
-                ease: "easeInOut",
-              }}
-              className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center text-3xl"
-            >
-              🎙️
-            </motion.div>
+          >
+            {/* Mic + Waveform */}
+            <div className="flex flex-col items-center gap-6 mb-10">
+              <motion.div
+                animate={{ scale: file ? 1 : [1, 1.05, 1] }}
+                transition={{
+                  repeat: file ? 0 : Infinity,
+                  duration: 2.5,
+                  ease: "easeInOut",
+                }}
+                className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center text-3xl"
+              >
+                🎙️
+              </motion.div>
 
-            {!file && <IdleWaveform />}
+              {!file && <IdleWaveform />}
 
-            {file && (
-              <div className="w-full">
-                <p className="text-sm font-semibold text-text-main mb-2">
-                  {file.name}
-                </p>
-                <FileWaveform />
-              </div>
-            )}
-          </div>
+              {file && (
+                <div className="w-full">
+                  <p className="text-sm font-semibold text-text-main mb-2">
+                    {file.name}
+                  </p>
+                  <FileWaveform />
+                </div>
+              )}
+            </div>
 
-          {/* Actions */}
-          {!file ? (
-            <>
-              <input
-                id="audio-upload"
-                type="file"
-                accept="audio/*"
-                onChange={handleSelect}
-                className="hidden"
-              />
-              <label
-                htmlFor="audio-upload"
-                className="inline-block px-8 py-3 rounded-full
+            {/* Actions */}
+            {!file ? (
+              <>
+                <input
+                  id="audio-upload"
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleSelect}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="audio-upload"
+                  className="inline-block px-8 py-3 rounded-full
                   bg-primary text-white font-bold
                   hover:bg-primary-dark transition-all
                   cursor-pointer active:scale-95"
-              >
-                Select Audio File
-              </label>
+                >
+                  Select Audio File
+                </label>
 
-              <p className="text-xs text-text-soft mt-4">
-                WAV / MP3 / M4A · 최대 30초
-              </p>
-            </>
-          ) : (
-            <button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing}
-              className={`w-full mt-6 px-10 py-4 rounded-full
+                <p className="text-xs text-text-soft mt-4">
+                  WAV / MP3 / M4A · 최대 30초
+                </p>
+              </>
+            ) : (
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className={`w-full mt-6 px-10 py-4 rounded-full
                 font-black tracking-wide transition-all
                 ${
                   isAnalyzing
@@ -159,12 +155,13 @@ export default function AudioUploadPage() {
                     : "bg-primary text-white hover:bg-primary-dark"
                 }
                 shadow-lg active:scale-95`}
-            >
-              {isAnalyzing ? "ANALYZING..." : "SCAN VOICE"}
-            </button>
-          )}
+              >
+                {isAnalyzing ? "ANALYZING..." : "SCAN VOICE"}
+              </button>
+            )}
+          </div>
         </div>
-      </motion.section>
+      </section>
     </main>
   );
 }

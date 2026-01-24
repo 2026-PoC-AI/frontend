@@ -54,22 +54,24 @@ export default function ImagePage() {
         <ImageProgress />
       </div>
 
-      <div className="relative flex-1 min-h-125 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-        <Stage active={step === "upload"}>
-          <ImageUploadCard />
-        </Stage>
+      <div className="transition-all duration-500 ease-in-out">
+        <div className="relative flex-1 min-h-125 animate-fade-up">
+          <Stage active={step === "upload"}>
+            <ImageUploadCard />
+          </Stage>
 
-        <Stage active={step === "analyze"}>
-          <ImageAnalyzeSkeleton />
-        </Stage>
+          <Stage active={step === "analyze"}>
+            <ImageAnalyzeSkeleton />
+          </Stage>
 
-        <Stage active={step === "summary"} scale>
-          <ImageResultSummary />
-        </Stage>
+          <Stage active={step === "summary"} scale>
+            <ImageResultSummary />
+          </Stage>
 
-        <Stage active={step === "report"} scale>
-          <ImageFinalReport />
-        </Stage>
+          <Stage active={step === "report"} scale>
+            <ImageFinalReport />
+          </Stage>
+        </div>
       </div>
     </main>
   );
