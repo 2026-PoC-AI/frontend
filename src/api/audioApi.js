@@ -1,29 +1,81 @@
-// src/api/audioApi.js
+import axios from "./axios";
 
-export const analyzeAudio = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  // 필요 시 clientRequestId 추가
-  // formData.append("clientRequestId", crypto.randomUUID());
-
-  // try-catch 블록 제거
-  // fetch나 json()에서 에러가 나면 자동으로 호출자(AudioPage)에게 전파됩니다.
-  const response = await fetch("/api/v1/audio/analyze", {
-    method: "POST",
-    body: formData,
+/**
+ * 오디오 업로드
+ * Presigned S3 업로드 완료 후 DB 등록
+ * POST /api/audio/upload
+ */
+export async function uploadAudio({ s3Key, file }) {
+  const res = await axios.post("/api/audio/upload", {
+    s3Key,
+    fileName: file.name,
+    fileSize: file.size,
+    contentType: file.type,
   });
 
-  const data = await response.json();
+  return res.data;
+}
 
-  // API 서버가 에러 응답(4xx, 5xx)을 보낸 경우 명시적으로 에러를 던집니다.
-  if (!response.ok) {
-    throw {
-      status: response.status,
-      errorCode: data.errorCode || "UNKNOWN_ERROR",
-      message: data.message || "알 수 없는 오류가 발생했습니다.",
-      details: data.details,
-    };
-  }
+/**
+ * 오디오 분석 요청
+ * POST /api/audio/{audioFileId}/analyze
+ */
+export async function analyzeAudio(audioFileId) {
+  const res = await axios.post(
+    `/api/audio/${audioFileId}/analyze`
+  );
+  return res.data;
+}
 
-  return data;
+/**
+ * 오디오 분석 결과 조회
+ * GET /api/audio/{audioFileId}/result
+ */
+export async function getAudioResult(audioFileId) {
+  const res = await axios.get(
+    `/api/audio/${audioFileId}/result`
+  );
+  return res.data;
+}
+
+/**
+ * 오디오 파일 정보 조회
+ * GET /api/audio/{audioFileId}
+ */
+export async function getAudioFileInfo(audioFileId) {
+  const res = await axios.get(
+    `/api/audio/${audioFileId}`
+  );
+  return res.data;
+}
+
+/**
+ * 오디오 히스토리 조회
+ * GET /api/audio/list
+ */
+export async function getAudioHistory() {
+  const res = await axios.get(
+    "/api/audio/list"
+  );
+  return res.data;
+}
+
+/**
+ * 오디오 삭제
+ * DELETE /api/audio/{audioFileId}
+ */
+export async function deleteAudio(audioFileId) {
+  const res = await axios.delete(
+    `/api/audio/${audioFileId}`
+  );
+  return res.data;
+}
+
+export default {
+  uploadAudio,
+  analyzeAudio,
+  getAudioResult,
+  getAudioFileInfo,
+  getAudioHistory,
+  deleteAudio,
 };
