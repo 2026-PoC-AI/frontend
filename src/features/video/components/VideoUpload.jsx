@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Video, X, Clock, AlertTriangle } from "lucide-react";
-import { analyzeVideo } from "../api/videoApi";
+import { Video, X, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { analyzeVideo, getAnalysisProgress } from "../../../api/videoApi";
 
 export function VideoUpload() {
   const navigate = useNavigate();
@@ -12,6 +12,15 @@ export function VideoUpload() {
   const [error, setError] = useState(null);
   const [videoMetadata, setVideoMetadata] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
+  
+  // 진행률 상태
+  const [progress, setProgress] = useState(0);
+  const [progressStage, setProgressStage] = useState("");
+  const [progressDetail, setProgressDetail] = useState("");
+  
+  const pollingIntervalRef = useRef(null);
+  const currentAnalysisIdRef = useRef(null);
+  const fileRef = useRef(null);
 
   /* ================= Drag ================= */
 
@@ -47,7 +56,6 @@ export function VideoUpload() {
   const processFile = (selectedFile) => {
     setError(null);
 
-    // MP4 체크
     if (
       !selectedFile.type.includes("mp4") &&
       !selectedFile.name.endsWith(".mp4")
@@ -58,7 +66,6 @@ export function VideoUpload() {
       return;
     }
 
-    // 사이즈 체크
     const maxSize = 50 * 1024 * 1024;
     if (selectedFile.size > maxSize) {
       setError("파일 크기는 50MB 이하여야 합니다.");
@@ -66,6 +73,7 @@ export function VideoUpload() {
     }
 
     setFile(selectedFile);
+    fileRef.current = selectedFile; // ref에 저장
 
     const video = document.createElement("video");
     video.preload = "metadata";
@@ -73,29 +81,20 @@ export function VideoUpload() {
 
     const videoUrl = URL.createObjectURL(selectedFile);
 
-    /* ===== Thumbnail ===== */
-
     const generateThumbnail = () => {
       const canvas = document.createElement("canvas");
-
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
-
       const context = canvas.getContext("2d");
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
       const thumbnailUrl = canvas.toDataURL("image/jpeg", 0.8);
       setThumbnail(thumbnailUrl);
-
       URL.revokeObjectURL(videoUrl);
     };
-
-    /* ===== Metadata ===== */
 
     video.onloadedmetadata = () => {
       const duration = video.duration;
 
-      // 길이 제한
       if (duration > 60) {
         setError("영상 길이는 60초 이하여야 합니다.");
         setFile(null);
@@ -104,7 +103,6 @@ export function VideoUpload() {
       }
 
       const size = (selectedFile.size / 1024 / 1024).toFixed(2);
-
       setVideoMetadata({
         duration: Math.round(duration),
         size: size + " MB",
@@ -119,16 +117,13 @@ export function VideoUpload() {
 
     video.onerror = () => {
       console.warn("metadata read failed, fallback mode");
-
       const size = (selectedFile.size / 1024 / 1024).toFixed(2);
-
       setVideoMetadata({
         duration: 0,
         size: size + " MB",
       });
 
       video.currentTime = 0;
-
       video.muted = true;
       video
         .play()
@@ -146,34 +141,158 @@ export function VideoUpload() {
     video.src = videoUrl;
   };
 
+  /* ================= Progress Polling ================= */
+
+  const stopProgressPolling = useCallback(() => {
+    console.log("🛑 폴링 정리");
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    currentAnalysisIdRef.current = null;
+  }, []);
+
+  const startProgressPolling = useCallback((analysisId) => {
+    console.log("========================================");
+    console.log("폴링 시작 - analysisId:", analysisId);
+    console.log("========================================");
+    
+    currentAnalysisIdRef.current = analysisId;
+    
+    // 기존 폴링이 있다면 정리
+    if (pollingIntervalRef.current) {
+      console.log("기존 폴링 인터벌 정리");
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    // 폴링 함수 정의
+    const pollProgress = async () => {
+      const now = new Date().toLocaleTimeString();
+      console.log(`[${now}] 🔍 진행률 조회 - ID: ${analysisId}`);
+      
+      try {
+        const progressData = await getAnalysisProgress(analysisId);
+        
+        if (!progressData) {
+          console.log(`[${now}] ⚠️ 진행률 데이터 없음`);
+          return;
+        }
+
+        console.log(`[${now}] ✅ ${progressData.progress}% (${progressData.stage})`);
+        
+        setProgress(progressData.progress || 0);
+        setProgressStage(progressData.stage || "");
+        setProgressDetail(progressData.detail || "");
+
+        // 완료 조건 체크
+        if (progressData.progress >= 100 || progressData.stage === "completed") {
+          console.log("🎉 분석 완료! 폴링 중지 및 결과 페이지 이동");
+          
+          // 폴링 중지
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          
+          try {
+            // 결과 조회
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+            const response = await fetch(`${apiUrl}/api/video/analysis/${analysisId}`);
+            
+            if (!response.ok) {
+              throw new Error("분석 결과 조회 실패");
+            }
+            
+            const result = await response.json();
+            console.log("✅ 분석 결과 로드 완료");
+            
+            setUploading(false);
+            
+            navigate("/video/results", {
+              state: {
+                file: {
+                  name: fileRef.current.name,
+                  size: fileRef.current.size,
+                },
+                fileFromState: fileRef.current,
+                result,
+              },
+            });
+          } catch (err) {
+            console.error("❌ 결과 조회 실패:", err);
+            setError("분석 결과를 불러오는데 실패했습니다.");
+            setUploading(false);
+          }
+        }
+      } catch (err) {
+        console.error(`[${now}] ❌ 진행률 조회 실패:`, err);
+      }
+    };
+
+    // 즉시 첫 번째 조회
+    pollProgress();
+
+    // 1초마다 폴링
+    pollingIntervalRef.current = setInterval(pollProgress, 1000);
+    console.log("✅ 폴링 인터벌 시작 - ID:", pollingIntervalRef.current);
+  }, [navigate]);
+
+  useEffect(() => {
+    return () => {
+      stopProgressPolling();
+    };
+  }, [stopProgressPolling]);
+
   /* ================= Analyze ================= */
 
   const handleAnalyze = async () => {
     if (!file) return;
 
+    console.log("분석 시작 - 파일:", file.name);
     setUploading(true);
     setError(null);
+    setProgress(0);
+    setProgressStage("video_upload");
+    setProgressDetail("영상 업로드 준비 중...");
 
     try {
       const result = await analyzeVideo(file);
-
-      navigate("/video/results", {
-        state: {
-          file: {
-            name: file.name,
-            size: file.size,
-          },
-          fileFromState: file,
-          result,
-        },
-      });
+      console.log("분석 요청 응답:", result);
+      
+      if (result.analysisId) {
+        console.log("분석 ID 수신:", result.analysisId);
+        
+        if (result.status === "PROCESSING") {
+          console.log("분석 중 상태 - 폴링 시작");
+          startProgressPolling(result.analysisId);
+          return;
+        }
+        
+        if (result.status === "COMPLETED") {
+          console.log("즉시 완료 - 결과 페이지로 이동");
+          setUploading(false);
+          navigate("/video/results", {
+            state: {
+              file: {
+                name: file.name,
+                size: file.size,
+              },
+              fileFromState: file,
+              result,
+            },
+          });
+          return;
+        }
+      } else {
+        throw new Error("분석 ID를 받지 못했습니다.");
+      }
     } catch (err) {
-      console.error(err);
+      console.error("분석 요청 실패:", err);
       setError(
         err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.",
       );
-    } finally {
       setUploading(false);
+      stopProgressPolling();
     }
   };
 
@@ -181,16 +300,30 @@ export function VideoUpload() {
 
   const handleRemove = () => {
     setFile(null);
+    fileRef.current = null;
     setVideoMetadata(null);
     setError(null);
     setThumbnail(null);
+    setProgress(0);
+    setProgressStage("");
+    setProgressDetail("");
+    stopProgressPolling();
   };
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-
     return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const getStageIcon = (stage) => {
+    if (stage === "completed") return "✓";
+    if (stage === "video_upload") return "📤";
+    if (stage === "frame_extraction") return "🎞️";
+    if (stage === "face_detection") return "👤";
+    if (stage === "ai_analysis") return "🤖";
+    if (stage === "result_generation") return "📊";
+    return "⏳";
   };
 
   /* ================= Render ================= */
@@ -211,6 +344,7 @@ export function VideoUpload() {
           AI가 프레임별로 딥페이크 패턴을 분석합니다.
         </p>
       </div>
+
       {/* Error */}
       {error && (
         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center gap-3 max-w-xl mx-auto">
@@ -220,8 +354,8 @@ export function VideoUpload() {
       )}
 
       <div className="transition-all duration-500 ease-in-out">
-        {/* Upload */}
         {!file ? (
+          /* Upload */
           <div className="animate-fade-up">
             <div
               onDragOver={handleDragOver}
@@ -257,7 +391,6 @@ export function VideoUpload() {
                     <p className="text-lg font-bold text-text-main">
                       비디오 파일 업로드
                     </p>
-
                     <p className="text-sm text-text-sub mt-2">
                       MP4 (최대 50MB, 60초)
                     </p>
@@ -304,7 +437,6 @@ export function VideoUpload() {
                         {videoMetadata && (
                           <>
                             <span>•</span>
-
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               <span>
@@ -328,15 +460,89 @@ export function VideoUpload() {
                 </div>
               </div>
 
-              {/* Loading */}
+              {/* Progress */}
               {uploading && (
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="inline-block w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                <div className="space-y-4 mb-6">
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-text-main">
+                        진행률
+                      </span>
+                      <span className="text-primary font-bold">
+                        {progress}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-primary to-primary-dark transition-all duration-300 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
 
-                    <p className="text-sm sm:text-base text-text-sub font-medium">
-                      AI가 영상을 분석하고 있습니다...
-                    </p>
+                  {/* Progress Steps */}
+                  <div className="space-y-3">
+                    {[
+                      { key: "video_upload", label: "영상 업로드 중" },
+                      { key: "frame_extraction", label: "프레임 추출 중" },
+                      { key: "face_detection", label: "얼굴 검출 중" },
+                      { key: "ai_analysis", label: "AI 모델 분석 중" },
+                      { key: "result_generation", label: "결과 생성 중" },
+                    ].map((step) => {
+                      const stageOrder = ["video_upload", "frame_extraction", "face_detection", "ai_analysis", "result_generation"];
+                      const currentIndex = stageOrder.indexOf(progressStage);
+                      const stepIndex = stageOrder.indexOf(step.key);
+                      
+                      const isActive = progressStage === step.key;
+                      const isCompleted = progressStage === "completed" || currentIndex > stepIndex;
+
+                      return (
+                        <div
+                          key={step.key}
+                          className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                            isActive
+                              ? "bg-primary/10 border border-primary/30"
+                              : isCompleted
+                              ? "bg-green-50 border border-green-200"
+                              : "bg-gray-50 border border-gray-200"
+                          }`}
+                        >
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                              isActive
+                                ? "bg-primary text-white"
+                                : isCompleted
+                                ? "bg-green-500 text-white"
+                                : "bg-gray-300 text-gray-600"
+                            }`}
+                          >
+                            {isCompleted ? "✓" : getStageIcon(step.key)}
+                          </div>
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-medium ${
+                                isActive
+                                  ? "text-primary"
+                                  : isCompleted
+                                  ? "text-green-700"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              {step.label}
+                            </p>
+                            {isActive && progressDetail && (
+                              <p className="text-xs text-text-sub mt-0.5">
+                                {progressDetail}
+                              </p>
+                            )}
+                          </div>
+                          {isActive && (
+                            <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
