@@ -1,257 +1,183 @@
-/**
- * SuspiciousFrames 컴포넌트
- * 
- * 비디오 분석 결과 중 딥페이크 신뢰도가 가장 높은 상위 5개 프레임을 표시합니다.
- * 각 프레임을 클릭하면 비디오 플레이어가 해당 시점으로 이동합니다.
- * 
- * @param {Object} props
- * @param {Array} props.frameAnalyses - 프레임별 분석 데이터 배열
- *   - frameNumber: 프레임 번호
- *   - timestamp: 타임스탬프 (초)
- *   - confidence: 딥페이크 신뢰도 (0-100)
- *   - anomalyRegions: 이상 영역 정보
- * @param {Function} props.onFrameClick - 프레임 클릭 시 호출되는 콜백 (frameIndex)
- * @param {string} props.videoUrl - 비디오 URL (프레임 추출용)
- */
+// src/pages/video/result/SuspiciousFrames.jsx
 
-import { AlertTriangle, Clock, Target } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from "react";
+import { AlertTriangle } from "lucide-react";
 
 export function SuspiciousFrames({ frameAnalyses, onFrameClick, videoUrl }) {
-    const [frameThumbnails, setFrameThumbnails] = useState({});
-    
-    // confidence가 높은 순으로 정렬하여 상위 5개 추출
-    const topSuspiciousFrames = [...frameAnalyses]
-        .map((frame, index) => ({ ...frame, originalIndex: index }))
-        .sort((a, b) => b.confidence - a.confidence)
-        .slice(0, 5);
+  const [thumbnails, setThumbnails] = useState([]);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
-    // 비디오에서 프레임 추출
-    useEffect(() => {
-        console.log('=== 프레임 추출 시작 ===');
-        console.log('videoUrl:', videoUrl);
-        console.log('topSuspiciousFrames:', topSuspiciousFrames);
-        
-        if (!videoUrl || topSuspiciousFrames.length === 0) {
-            console.log('비디오 URL 없음 또는 프레임 없음');
-            return;
-        }
-        
-        const video = document.createElement('video');
-        video.src = videoUrl;
-        video.crossOrigin = 'anonymous';
-        
-        video.onloadedmetadata = () => {
-            console.log('비디오 메타데이터 로드 완료');
-            console.log('비디오 크기:', video.videoWidth, 'x', video.videoHeight);
-            console.log('비디오 길이:', video.duration);
-            
-            const extractFrame = (frameNumber, timestamp) => {
-                return new Promise((resolve, reject) => {
-                    console.log(`프레임 ${frameNumber} 추출 시작 (${timestamp}초)`);
-                    
-                    video.currentTime = timestamp;
-                    
-                    video.onseeked = () => {
-                        console.log(`프레임 ${frameNumber} seek 완료`);
-                        
-                        try {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = video.videoWidth;
-                            canvas.height = video.videoHeight;
-                            
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(video, 0, 0);
-                            
-                            const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
-                            console.log(`프레임 ${frameNumber} 썸네일 생성 완료`);
-                            
-                            resolve({ frameNumber, thumbnailUrl });
-                        } catch (err) {
-                            console.error(`프레임 ${frameNumber} 추출 실패:`, err);
-                            reject(err);
-                        }
-                    };
-                    
-                    video.onerror = (e) => {
-                        console.error(`프레임 ${frameNumber} seek 에러:`, e);
-                        reject(e);
-                    };
-                });
-            };
-            
-            // 상위 프레임들의 썸네일 생성 (순차적으로)
-            const extractSequentially = async () => {
-                const thumbnails = {};
-                
-                for (const frame of topSuspiciousFrames) {
-                    try {
-                        const result = await extractFrame(frame.frameNumber, frame.timestamp);
-                        thumbnails[result.frameNumber] = result.thumbnailUrl;
-                    } catch (err) {
-                        console.error('프레임 추출 실패:', err);
-                    }
-                }
-                
-                console.log('모든 썸네일 생성 완료:', thumbnails);
-                setFrameThumbnails(thumbnails);
-            };
-            
-            extractSequentially();
-        };
-        
-        video.onerror = (e) => {
-            console.error('비디오 로딩 실패:', e);
-            console.error('비디오 에러 상세:', video.error);
-        };
-        
-    }, [videoUrl, topSuspiciousFrames.length]);
+  // 상위 5개 의심 프레임 추출
+  const topSuspiciousFrames = frameAnalyses
+    .filter((f) => f.confidence > 60) // 60% 이상만
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 5);
 
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
+  console.log("=== 프레임 추출 시작 ===");
+  console.log("videoUrl:", videoUrl);
+  console.log("topSuspiciousFrames:", topSuspiciousFrames);
 
-    // confidence에 따른 위험도 레벨 결정
-    const getRiskLevel = (confidence) => {
-        if (confidence > 70) return { label: '높음', color: 'red' };
-        if (confidence > 40) return { label: '중간', color: 'orange' };
-        return { label: '낮음', color: 'green' };
-    };
-
-    // confidence에 따른 배경색 결정
-    const getBackgroundColor = (confidence) => {
-        if (confidence > 70) return 'bg-red-50 border-red-200';
-        if (confidence > 40) return 'bg-orange-50 border-orange-200';
-        return 'bg-green-50 border-green-200';
-    };
-
-    // confidence에 따른 텍스트 색상 결정
-    const getTextColor = (confidence) => {
-        if (confidence > 70) return 'text-red-600';
-        if (confidence > 40) return 'text-orange-600';
-        return 'text-green-600';
-    };
-
-    if (topSuspiciousFrames.length === 0) {
-        return (
-            <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">
-                <h3 className="text-xl font-bold text-text-main mb-6">의심 프레임 분석</h3>
-                <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <AlertTriangle className="w-8 h-8 text-green-500" />
-                    </div>
-                    <p className="text-text-sub">의심스러운 프레임이 발견되지 않았습니다.</p>
-                </div>
-            </div>
-        );
+  useEffect(() => {
+    if (!videoUrl || topSuspiciousFrames.length === 0) {
+      console.log("비디오 URL 없음 또는 프레임 없음");
+      return;
     }
 
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (!video || !canvas) {
+      console.log("Video 또는 Canvas 요소 없음");
+      return;
+    }
+
+    const ctx = canvas.getContext("2d");
+
+    const extractThumbnails = async () => {
+      console.log("썸네일 추출 시작");
+
+      const extracted = [];
+
+      for (let i = 0; i < topSuspiciousFrames.length; i++) {
+        const frame = topSuspiciousFrames[i];
+
+        await new Promise((resolve) => {
+          const seeked = () => {
+            video.removeEventListener("seeked", seeked);
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            ctx.drawImage(video, 0, 0);
+
+            const thumbnail = canvas.toDataURL("image/jpeg", 0.8);
+
+            extracted.push({
+              ...frame,
+              thumbnail,
+            });
+
+            console.log(`썸네일 추출 완료: ${i + 1}/${topSuspiciousFrames.length}`);
+
+            resolve();
+          };
+
+          video.addEventListener("seeked", seeked);
+          video.currentTime = frame.timestamp;
+        });
+      }
+
+      setThumbnails(extracted);
+      console.log("모든 썸네일 추출 완료:", extracted.length);
+    };
+
+    const handleLoadedMetadata = () => {
+      console.log("비디오 메타데이터 로드 완료");
+      extractThumbnails();
+    };
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+    };
+  }, [videoUrl, topSuspiciousFrames]);
+
+  if (topSuspiciousFrames.length === 0) {
     return (
-        <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h3 className="text-xl font-bold text-text-main">의심 프레임 분석</h3>
-                    <p className="text-sm text-text-sub mt-1">
-                        딥페이크 신뢰도가 가장 높은 {topSuspiciousFrames.length > 5 ? '상위 5개' : '전체'} 프레임
-                    </p>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1 bg-red-50 border border-red-200 rounded-full">
-                    <Target className="w-4 h-4 text-red-600" />
-                    <span className="text-sm font-medium text-red-600">
-                        {topSuspiciousFrames.length}개 발견
-                    </span>
-                </div>
-            </div>
-
-            {/* auto-fit 그리드 사용 */}
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                {topSuspiciousFrames.map((frame, index) => {
-                    const riskLevel = getRiskLevel(frame.confidence);
-                    const thumbnailUrl = frameThumbnails[frame.frameNumber];
-                    
-                    return (
-                        <button
-                            key={frame.originalIndex}
-                            onClick={() => onFrameClick(frame.originalIndex)}
-                            className={`p-4 rounded-xl border-2 transition-all hover:scale-105 hover:shadow-lg cursor-pointer text-left ${getBackgroundColor(frame.confidence)}`}
-                        >
-                            {/* 순위 배지 */}
-                            <div className="flex items-center justify-between mb-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                                    index === 0 ? 'bg-red-500 text-white' :
-                                    index === 1 ? 'bg-orange-500 text-white' :
-                                    'bg-gray-400 text-white'
-                                }`}>
-                                    #{index + 1}
-                                </div>
-                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                                    riskLevel.color === 'red' ? 'bg-red-100 text-red-700' :
-                                    riskLevel.color === 'orange' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-green-100 text-green-700'
-                                }`}>
-                                    {riskLevel.label}
-                                </span>
-                            </div>
-
-                            {/* 섬네일 */}
-                            <div className="relative mb-3 aspect-video bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg overflow-hidden">
-                                {thumbnailUrl ? (
-                                    <img 
-                                        src={thumbnailUrl}
-                                        alt={`프레임 ${frame.frameNumber}`}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="text-center">
-                                            <div className="w-8 h-8 border-4 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                                            <p className="text-xs text-gray-600">로딩 중...</p>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {/* Confidence 오버레이 */}
-                                <div className="absolute top-2 right-2 px-2 py-1 bg-black/70 text-white text-xs font-bold rounded">
-                                    {Math.round(frame.confidence)}%
-                                </div>
-                            </div>
-
-                            {/* 프레임 정보 */}
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-gray-700">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{formatTime(frame.timestamp)}</span>
-                                </div>
-                                
-                                <div className={`text-sm font-semibold ${getTextColor(frame.confidence)}`}>
-                                    신뢰도: {Math.round(frame.confidence)}%
-                                </div>
-
-                                {/* 클릭 안내 */}
-                                <div className="text-xs text-gray-500 pt-2 border-t border-gray-300">
-                                    클릭하여 이동 →
-                                </div>
-                            </div>
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* 안내 메시지 */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                    <div className="text-xl">ℹ️</div>
-                    <div className="flex-1">
-                        <p className="text-sm text-blue-900">
-                            <strong>분석 기준:</strong> 각 프레임은 AI 모델이 얼굴 경계, 조명, 색상 일관성 등을 
-                            종합적으로 분석하여 딥페이크 가능성을 판단합니다. 
-                            신뢰도가 높을수록 딥페이크일 가능성이 높습니다.
-                        </p>
-                    </div>
-                </div>
-            </div>
+      <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft text-center">
+        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-8 h-8 text-green-600" />
         </div>
+        <h3 className="text-xl font-bold text-text-main mb-2">
+          의심 프레임 없음
+        </h3>
+        <p className="text-text-sub">
+          분석 결과 의심스러운 프레임이 발견되지 않았습니다
+        </p>
+      </div>
     );
+  }
+
+  return (
+    <div className="p-8 rounded-[24px] bg-white/60 backdrop-blur-md border border-white/60 shadow-glass-soft">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+          <AlertTriangle className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-text-main">
+            가장 의심스러운 프레임
+          </h3>
+          <p className="text-sm text-text-sub">
+            신뢰도 상위 {topSuspiciousFrames.length}개 프레임
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {topSuspiciousFrames.map((frame, index) => {
+          const thumbnail = thumbnails.find(
+            (t) => t.frameNumber === frame.frameNumber
+          );
+
+          return (
+            <button
+              key={frame.frameNumber}
+              onClick={() => onFrameClick(frameAnalyses.indexOf(frame))}
+              className="group relative overflow-hidden rounded-xl border-2 border-white/60 hover:border-primary transition-all hover:shadow-lg"
+            >
+              {/* 썸네일 or 플레이스홀더 */}
+              <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                {thumbnail ? (
+                  <img
+                    src={thumbnail.thumbnail}
+                    alt={`Frame ${frame.frameNumber}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center p-2">
+                    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-xs text-text-soft">로딩중...</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 오버레이 */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                <p className="text-white text-xs font-medium">
+                  프레임 #{frame.frameNumber}
+                </p>
+                <p className="text-white/80 text-xs">
+                  {frame.timestamp.toFixed(2)}초
+                </p>
+              </div>
+
+              {/* 신뢰도 배지 */}
+              <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-red-500 text-white text-xs font-bold shadow-lg">
+                {Math.round(frame.confidence)}%
+              </div>
+
+              {/* 순위 배지 */}
+              <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-xs font-bold text-primary">
+                {index + 1}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 숨겨진 비디오/캔버스 */}
+      <video
+        ref={videoRef}
+        src={videoUrl}
+        className="hidden"
+        muted
+        playsInline
+        crossOrigin="anonymous"
+      />
+      <canvas ref={canvasRef} className="hidden" />
+    </div>
+  );
 }
