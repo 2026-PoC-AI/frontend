@@ -8,61 +8,56 @@ export default function ImageHistoryPreview({ result }) {
   const themeColor = isFake ? "red" : "emerald";
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* VERDICT BLOCK */}
+    <div className="space-y-6">
+      {/* VERDICT */}
       <div
         className={`
-        relative overflow-hidden rounded-[32px] p-10 
-        border border-${themeColor}-500/20 
-        bg-gradient-to-br from-${themeColor}-500/[0.08] to-transparent
-      `}
+          rounded-[24px] p-6
+          border border-${themeColor}-500/20
+          bg-gradient-to-br from-${themeColor}-500/[0.06] to-transparent
+        `}
       >
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-center md:text-left">
+        <div className="flex items-center justify-between gap-6">
+          <div>
             <p
-              className={`text-[11px] font-black tracking-[0.3em] text-${themeColor}-500/60 uppercase mb-3`}
+              className={`text-[10px] font-black tracking-[0.3em] text-${themeColor}-500/60 uppercase mb-2`}
             >
               Verdict
             </p>
             <h3
-              className={`text-6xl font-black tracking-tighter ${isFake ? "text-red-500" : "text-emerald-500"}`}
+              className={`text-3xl font-black tracking-tight ${isFake ? "text-red-500" : "text-emerald-500"}`}
             >
               {analysis.label}
             </h3>
-            <div className="mt-6 flex items-center justify-center md:justify-start gap-4">
-              <div className="px-4 py-2 rounded-2xl bg-white/50 border border-white text-xs font-bold text-text-main shadow-sm">
-                Confidence{" "}
-                <span className="ml-1 text-primary">
-                  {(analysis.confidence * 100).toFixed(1)}%
-                </span>
-              </div>
+
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/50 border border-white text-[11px] font-bold text-text-main">
+              Confidence
+              <span className="text-primary">
+                {(analysis.confidence * 100).toFixed(1)}%
+              </span>
             </div>
           </div>
 
-          <div className="relative">
-            {/* 후광 효과 */}
-            <div
-              className={`absolute inset-0 blur-3xl opacity-20 bg-${themeColor}-500 rounded-full`}
-            />
-            <ImageRiskRing score={analysis.riskScore} variant="default" />
+          <div className="scale-[0.85]">
+            <ImageRiskRing score={analysis.riskScore} variant="compact" />
           </div>
         </div>
       </div>
 
-      {/* INTERPRETATION */}
-      <div className="rounded-[24px] bg-white/40 border border-white/60 p-8 shadow-glass-soft">
-        <p className="text-[10px] font-black tracking-[0.2em] text-text-soft/60 uppercase mb-4">
-          Analysis Summary
+      {/* SUMMARY */}
+      <div className="rounded-[20px] bg-white/40 border border-white/60 p-5">
+        <p className="text-[10px] font-black tracking-[0.2em] text-text-soft/60 uppercase mb-2">
+          Summary
         </p>
-        <p className="text-[16px] text-text-main leading-relaxed font-medium italic">
-          "{analysis.interpretation}"
+        <p className="text-sm text-text-main leading-relaxed">
+          {analysis.interpretation}
         </p>
       </div>
 
-      {/* META INFO */}
-      <div className="flex items-center justify-between px-4 text-[11px] font-bold text-text-soft/40 tracking-widest uppercase">
-        <span>File: {result.input?.filename}</span>
-        <span>Status: {result.job?.status}</span>
+      {/* META */}
+      <div className="flex justify-between px-1 text-[10px] font-bold text-text-soft/40 tracking-widest uppercase">
+        <span>{result.input?.filename}</span>
+        <span>{result.job?.status}</span>
       </div>
     </div>
   );

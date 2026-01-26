@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useImageStore } from "../../../../store/image/imageStore";
 import { getImageReport, generateImageReport } from "../../../../api/imageApi";
-import ImageReportActions from "./ImageReportActions";
 
 /* ---------------- Badge ---------------- */
 
@@ -10,12 +9,12 @@ function RiskBadge({ level }) {
     level === "HIGH"
       ? "bg-red-500/15 text-red-400 border-red-500/20"
       : level === "LOW"
-        ? "bg-green-500/15 text-green-400 border-green-500/20"
-        : "bg-yellow-400/15 text-yellow-300 border-yellow-400/20";
+        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+        : "bg-amber-400/15 text-amber-400 border-amber-400/20";
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs border ${tone}`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-widest border ${tone}`}
     >
       {level}
     </span>
@@ -43,7 +42,6 @@ export default function ImageFinalReport() {
 
   useEffect(() => {
     if (!jobUuid) return;
-
     let alive = true;
 
     addToHistoryFromResult();
@@ -53,46 +51,30 @@ export default function ImageFinalReport() {
         setReportLoading(true);
         setReportError(null);
 
-        /* 1️⃣ 먼저 생성 시도 */
         try {
           const created = await generateImageReport(jobUuid);
-
           if (!alive) return;
-
           setReport(created);
           return;
-        } catch (e) {
-          console.warn("Report already exists. Try GET.", e);
+        } catch {
+          const fetched = await getImageReport(jobUuid);
+          if (!alive) return;
+          setReport(fetched);
         }
-
-        /* 2️⃣ 생성 실패 시 조회 */
-        const fetched = await getImageReport(jobUuid);
-
-        if (!alive) return;
-
-        setReport(fetched);
-      } catch (e) {
-        console.error(e);
-
-        if (!alive) return;
-
-        setReportError("리포트를 불러오는 중 오류가 발생했습니다.");
+      } catch {
+        if (alive) setReportError("리포트를 불러오는 중 오류가 발생했습니다.");
       } finally {
         if (alive) setReportLoading(false);
       }
     };
 
     loadReport();
-
-    return () => {
-      alive = false;
-    };
+    return () => (alive = false);
   }, [jobUuid]);
 
-  /* ---------------- Fallback ---------------- */
+  /* ---------------- Derived ---------------- */
 
   const analysis = result?.results?.[0];
-
   const fallbackRisk = analysis?.riskLevel ?? "—";
   const fallbackScore = analysis?.riskScore ?? 0;
 
@@ -106,126 +88,142 @@ export default function ImageFinalReport() {
 
   const guidance = Array.isArray(report?.guidance) ? report.guidance : [];
 
-  /* ---------------- Actions ---------------- */
+  const confidenceTone =
+    overallRiskLevel === "HIGH"
+      ? "hover:text-red-400 hover:bg-red-400/15"
+      : overallRiskLevel === "LOW"
+        ? "hover:text-emerald-400 hover:bg-emerald-400/15"
+        : "hover:text-amber-400 hover:bg-amber-400/15";
 
-  const onDownloadPdf = () => {
-    alert("PDF 다운로드는 다음 단계에서 연결할게요.");
-  };
-
-  const onShare = async () => {
-    const shareUrl = `${window.location.origin}/image/history?job=${jobUuid}`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: "FakeHunters Image Report",
-          text: "최종 이미지 신뢰 리포트",
-          url: shareUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        alert("링크가 복사되었습니다.");
-      }
-    } catch {
-      // ignore
-    }
-  };
+  const scoreTone =
+    overallRiskLevel === "HIGH"
+      ? "text-red-400 drop-shadow-[0_0_12px_rgba(248,113,113,0.25)]"
+      : overallRiskLevel === "LOW"
+        ? "text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.25)]"
+        : "text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.25)]";
 
   /* ---------------- Render ---------------- */
 
   return (
-    <div className="space-y-7">
-      {/* Header */}
-      <header className="flex justify-between items-start">
-        <div>
-          <p className="text-xs tracking-widest text-text-soft mb-2">
+    <div className="space-y-14 animate-in fade-in slide-in-from-bottom-6 duration-700">
+      {/* ================= HEADER ================= */}
+      <header className="flex items-start justify-between">
+        <div className="space-y-2">
+          <p className="text-[11px] font-black tracking-[0.35em] text-text-soft uppercase">
             FINAL REPORT
           </p>
-
-          <h2 className="text-2xl font-extrabold text-text-main leading-tight">
+          <h2 className="text-[32px] leading-tight font-black text-text-main tracking-tight">
             최종 신뢰 리포트
           </h2>
-
-          <p className="text-sm text-text-soft mt-2">
-            분석 결과를 기반으로 생성된 AI 리포트입니다.
+          <p className="text-sm text-text-soft max-w-md">
+            AI 분석 결과를 기반으로 자동 생성된 종합 리포트입니다.
           </p>
         </div>
 
         <button
           onClick={() => setStep("summary")}
-          className="text-sm text-primary hover:underline"
+          className={`
+            inline-flex items-center gap-2
+            px-4 py-2
+            rounded-full
+            text-[11px] font-bold tracking-widest
+            text-text-soft
+            border border-white/40
+            bg-white/20
+            transition-all
+            active:scale-95
+            ${confidenceTone}
+          `}
         >
-          요약으로 돌아가기
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          분석 결과 다시보기
         </button>
       </header>
 
-      {/* Summary */}
-      <div className="rounded-2xl bg-white/45 backdrop-blur-xl border border-white/35 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-xs tracking-widest text-text-soft">OVERALL RISK</p>
-
+      {/* ================= SCORE (INDEPENDENT) ================= */}
+      <section className="flex items-end justify-between px-10">
+        <div>
+          <p className="text-xs font-black tracking-widest text-text-soft mb-2">
+            OVERALL RISK
+          </p>
           <RiskBadge level={overallRiskLevel} />
         </div>
 
-        <div className="flex items-end justify-between gap-4">
-          <div className="space-y-2">
-            {isReportLoading ? (
-              <div className="space-y-2">
-                <div className="h-4 w-64 bg-white/30 rounded animate-pulse" />
-                <div className="h-4 w-80 bg-white/25 rounded animate-pulse" />
-              </div>
-            ) : (
-              <p className="text-sm text-text-main leading-relaxed">
-                {summaryText}
-              </p>
-            )}
-
-            {reportError && (
-              <p className="text-xs text-red-300">{reportError}</p>
-            )}
-          </div>
-
-          <div className="text-right">
-            <p className="text-xs text-text-soft">RISK SCORE</p>
-
-            <p className="text-3xl font-extrabold text-text-main">
-              {fallbackScore}
-            </p>
-          </div>
+        <div className="text-right">
+          <p className="text-[11px] font-bold tracking-widest text-text-soft">
+            SCORE
+          </p>
+          <p
+            className={`
+              text-[56px] leading-none font-black
+              ${scoreTone}
+            `}
+          >
+            {fallbackScore}
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* Guidance */}
-      <div className="rounded-2xl bg-white/45 backdrop-blur-xl border border-white/35 p-6">
-        <p className="text-xs tracking-widest text-text-soft mb-3">GUIDANCE</p>
+      {/* ================= SUMMARY ================= */}
+      <section className="rounded-[32px] bg-white/45 backdrop-blur-xl border border-white/30 p-8">
+        {isReportLoading ? (
+          <div className="space-y-3">
+            <div className="h-4 w-2/3 bg-white/30 rounded animate-pulse" />
+            <div className="h-4 w-1/2 bg-white/25 rounded animate-pulse" />
+          </div>
+        ) : (
+          <p className="text-[15px] leading-relaxed text-text-main">
+            {summaryText}
+          </p>
+        )}
+
+        {reportError && (
+          <p className="mt-3 text-xs text-red-400">{reportError}</p>
+        )}
+      </section>
+
+      {/* ================= GUIDANCE ================= */}
+      <section className="rounded-[32px] bg-white/45 backdrop-blur-xl border border-white/30 p-8">
+        <p className="text-xs font-black tracking-widest text-text-soft mb-6">
+          GUIDANCE
+        </p>
 
         {isReportLoading ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="h-4 w-2/3 bg-white/25 rounded animate-pulse" />
             <div className="h-4 w-1/2 bg-white/25 rounded animate-pulse" />
           </div>
         ) : guidance.length > 0 ? (
-          <ul className="space-y-3">
-            {guidance.map((g, idx) => (
+          <ul className="space-y-4">
+            {guidance.map((g, i) => (
               <li
-                key={idx}
-                className="rounded-xl bg-white/40 border border-white/35 p-4"
+                key={i}
+                className="relative pl-5 text-[15px] leading-relaxed text-text-main"
               >
-                <p className="text-sm text-text-main leading-relaxed">{g}</p>
+                <span className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-primary/70" />
+                {g}
               </li>
             ))}
           </ul>
         ) : (
           <p className="text-sm text-text-soft">가이드 데이터가 없습니다.</p>
         )}
-      </div>
+      </section>
 
-      {/* Footer */}
-      <div className="text-xs text-text-soft">
-        ※ 본 리포트는 자동 생성된 요약으로 참고용입니다.
-      </div>
-
-      <ImageReportActions onDownloadPdf={onDownloadPdf} onShare={onShare} />
+      {/* ================= FOOTNOTE ================= */}
+      <p className="text-[11px] text-text-soft text-center">
+        ※ 본 리포트는 자동 생성된 요약으로 참고용이며 법적 효력을 가지지
+        않습니다.
+      </p>
     </div>
   );
 }

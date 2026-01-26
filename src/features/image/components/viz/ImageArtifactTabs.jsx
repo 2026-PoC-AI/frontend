@@ -13,31 +13,40 @@ export default function ImageArtifactTabs() {
   const [tab, setTab] = useState("bbox");
 
   return (
-    <div className="mt-10 space-y-6">
-      {/* Tabs */}
-      <div className="flex gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`
-              px-4 py-2 rounded-full text-xs font-bold tracking-widest transition
-              ${
-                tab === t.key
-                  ? "bg-primary-dark text-white shadow"
-                  : "bg-white/30 text-text-soft hover:bg-white/50"
-              }
-            `}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="mt-10 flex gap-6">
+      {/* ================= LEFT TABS ================= */}
+      <div className="w-40 shrink-0 space-y-2">
+        {TABS.map((t) => {
+          const active = tab === t.key;
+
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`
+                w-full text-left
+                px-4 py-3 rounded-xl
+                text-xs font-bold tracking-wide
+                transition-all
+                ${
+                  active
+                    ? "bg-primary/15 text-primary shadow-sm"
+                    : "bg-white/30 text-text-soft hover:bg-white/50"
+                }
+              `}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Content */}
-      {tab === "bbox" && <BoundingBoxOverlay />}
-      {tab === "heatmap" && <HeatmapOverlay />}
-      {tab === "faces" && <FaceCropGrid />}
+      {/* ================= RIGHT CONTENT ================= */}
+      <div className="flex-1">
+        {tab === "bbox" && <BoundingBoxOverlay />}
+        {tab === "heatmap" && <HeatmapOverlay />}
+        {tab === "faces" && <FaceCropGrid />}
+      </div>
     </div>
   );
 }
