@@ -1,45 +1,38 @@
 //시간대 위험 시각화
-export default function AudioTimeline({
-  segments,
-  onPreviewStart,
-  onPreviewEnd,
-}) {
+export default function AudioTimeline({ segments, onSeek }) {
   if (!segments?.length) return null;
 
   const total = Math.max(...segments.map((s) => s.endTime));
 
   return (
-    <section>
-      <h2 className="text-xl font-black mb-6">Risk Timeline</h2>
+    <section className="space-y-3">
+      <h3 className="text-sm font-bold text-slate-700">
+        위험 구간 타임라인 (클릭 시 재생)
+      </h3>
 
-      <div className="relative h-20 rounded-2xl bg-white/60 border p-4">
-        {segments.map((seg, i) => {
-          const left = (seg.startTime / total) * 100;
-          const width = ((seg.endTime - seg.startTime) / total) * 100;
-
-          const color =
-            seg.riskLevel === "high"
-              ? "bg-red-400"
-              : seg.riskLevel === "medium"
-                ? "bg-yellow-400"
-                : "bg-green-400";
+      <div className="relative h-14 rounded-xl bg-black/5 overflow-hidden">
+        {segments.map((s, i) => {
+          const left = (s.startTime / total) * 100;
+          const width = ((s.endTime - s.startTime) / total) * 100;
 
           return (
-            <div
+            <button
               key={i}
-              className={`absolute top-4 h-8 rounded-lg ${color} cursor-pointer
-                transition-opacity hover:opacity-80`}
+              onClick={() => onSeek?.(s.startTime)}
+              title={`${s.startTime}s`}
+              className={`
+                absolute top-2 h-10 rounded-xl
+                transition hover:scale-y-110 cursor-pointer
+                ${s.riskLevel === "high" ? "bg-red-400" : "bg-slate-400"}
+              `}
               style={{ left: `${left}%`, width: `${width}%` }}
-              title={seg.reason}
-              onMouseEnter={() => onPreviewStart?.(seg.startTime)}
-              onMouseLeave={() => onPreviewEnd?.()}
             />
           );
         })}
       </div>
 
-      <p className="text-xs text-text-soft mt-3">
-        Hover to preview · Click segments below to jump
+      <p className="text-[11px] text-slate-500">
+        위험 구간을 클릭하면 해당 시점부터 음성이 재생됩니다.
       </p>
     </section>
   );

@@ -5,10 +5,10 @@ export default function RiskOverlayBar({ segments }) {
   const total = Math.max(...segments.map((s) => s.endTime));
 
   return (
-    <section className="space-y-4">
-      <h2 className="text-xl font-black">Risk Density</h2>
+    <section className="space-y-2">
+      <h3 className="text-sm font-bold text-slate-700">위험 밀도 요약</h3>
 
-      <div className="relative h-3 rounded-full bg-white/10 overflow-hidden">
+      <div className="relative h-2 rounded-full bg-black/10 overflow-hidden">
         {segments.map((s, i) => {
           const left = (s.startTime / total) * 100;
           const width = ((s.endTime - s.startTime) / total) * 100;
@@ -16,22 +16,12 @@ export default function RiskOverlayBar({ segments }) {
           return (
             <div
               key={i}
-              className={`absolute top-0 h-full
-                ${
-                  s.riskLevel === "high"
-                    ? "bg-red-500 animate-pulse"
-                    : "bg-green-400 opacity-40"
-                }
-              `}
+              className="absolute top-0 h-full bg-red-400"
               style={{ left: `${left}%`, width: `${width}%` }}
             />
           );
         })}
       </div>
-
-      <p className="text-xs opacity-60">
-        Highlighted segments indicate detected manipulation risk
-      </p>
     </section>
   );
 }
