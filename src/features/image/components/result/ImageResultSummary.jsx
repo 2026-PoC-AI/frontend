@@ -1,145 +1,174 @@
+// src/features/image/components/result/ImageResultSummary.jsx
 import { useImageStore } from "../../../../store/image/imageStore";
 import ImageRiskRing from "../viz/ImageRiskRing";
 import ImageArtifactGallery from "../viz/ImageArtifactGallery";
-
-function Badge({ text, tone = "neutral" }) {
-  const cls =
-    tone === "danger"
-      ? "bg-red-500/15 text-red-400 border-red-500/20"
-      : tone === "safe"
-        ? "bg-green-500/15 text-green-400 border-green-500/20"
-        : "bg-white/30 text-text-main/80 border-white/35";
-
-  return (
-    <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs border ${cls}`}
-    >
-      {text}
-    </span>
-  );
-}
+import RiskDistributionBar from "../viz/RiskDistributionBar";
+import ConfidenceMeter from "../viz/ConfidenceMeter";
+import AIInsightCard from "../viz/AIInsightCard";
 
 export default function ImageResultSummary({ resultOverride }) {
   const { result: storeResult, setStep, clearFile } = useImageStore();
   const result = resultOverride ?? storeResult;
 
   const job = result?.job;
-  const input = result?.input;
   const analysis = result?.results?.[0];
 
   if (!analysis) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-center">
-        <p className="text-text-main/70 mb-2">아직 결과 데이터가 없습니다.</p>
-        <p className="text-xs text-text-soft">
-          분석 결과를 불러오는 중이거나 아직 완료되지 않았습니다.
-        </p>
+      <div className="h-full flex items-center justify-center text-text-soft">
+        분석 결과를 불러오는 중입니다…
       </div>
     );
   }
 
   const isFake = analysis.label === "FAKE";
+  const theme = isFake ? "red" : "emerald";
 
   const isReportEnabled =
     job?.status === "ANALYZED" || job?.status === "REPORT_READY";
 
+  const riskLevel = analysis.riskLevel;
+
+  const reportHoverTone =
+    riskLevel === "HIGH"
+      ? "hover:text-red-400 hover:bg-red-400/15"
+      : riskLevel === "LOW"
+        ? "hover:text-emerald-400 hover:bg-emerald-400/15"
+        : "hover:text-amber-400 hover:bg-amber-400/15";
+
   return (
-    <div className="space-y-8">
-      <div className="grid lg:grid-cols-[220px_1fr] gap-6 items-center">
-        <div className="relative">
-          <ImageRiskRing score={analysis.riskScore} />
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge text={`Status: ${job?.status ?? "—"}`} />
-            <Badge
-              text={`Risk: ${analysis.riskLevel}`}
-              tone={
-                analysis.riskLevel === "HIGH"
-                  ? "danger"
-                  : analysis.riskLevel === "LOW"
-                    ? "safe"
-                    : "neutral"
-              }
-            />
-            <Badge text={`Task: ${analysis.taskType}`} />
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div
-              className={`
-                rounded-2xl p-5
-                bg-white/45 backdrop-blur-xl border border-white/35
-                ${isFake ? "shadow-[0_0_44px_rgba(239,68,68,0.18)]" : "shadow-[0_0_44px_rgba(34,197,94,0.14)]"}
-              `}
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20">
+      {/* ================= ACTIONS ================= */}
+      <section>
+        <div
+          className="
+            mx-auto max-w-full
+            flex items-center justify-between
+          "
+        >
+          {/* Secondary Action */}
+          <button
+            onClick={() => {
+              clearFile();
+              setStep("upload");
+            }}
+            className="
+            inline-flex items-center gap-2
+            px-3 py-2
+            rounded-full
+            text-[11px] font-semibold
+            text-text-soft
+            hover:text-primary
+            hover:bg-primary/10
+            transition-colors
+            active:scale-95
+          "
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
             >
-              <p className="text-xs tracking-widest text-text-soft mb-2">
-                VERDICT
-              </p>
-              <p
-                className={`text-3xl font-extrabold ${isFake ? "text-red-400" : "text-green-400"}`}
-              >
-                {analysis.label}
-              </p>
-            </div>
+              <path d="M12 19V5M5 12h14" />
+            </svg>
+            새 이미지 분석
+          </button>
 
-            <div className="rounded-2xl p-5 bg-white/45 backdrop-blur-xl border border-white/35">
-              <p className="text-xs tracking-widest text-text-soft mb-2">
-                CONFIDENCE
-              </p>
-              <p className="text-3xl font-extrabold text-text-main">
-                {(analysis.confidence * 100).toFixed(1)}%
-              </p>
-            </div>
-          </div>
+          {/* Primary Action */}
+          <button
+            disabled={!isReportEnabled}
+            onClick={() => isReportEnabled && setStep("report")}
+            className={`
+            inline-flex items-center gap-2
+            px-4 py-2
+            rounded-full
+            text-[11px] font-bold tracking-widest
+            transition-all
+            active:scale-95
+            ${
+              isReportEnabled
+                ? `
+                  text-text-main
+                  bg-white/30
+                  border border-white/40
+                  ${reportHoverTone}
+                `
+                : "text-text-soft/50 cursor-not-allowed"
+            }
+          `}
+          >
+            최종 리포트
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
-      </div>
-
-      <div className="rounded-2xl bg-white/45 backdrop-blur-xl border border-white/35 p-6">
-        <p className="text-xs tracking-widest text-text-soft mb-3">
-          AI COMMENTARY
-        </p>
-        <p className="text-sm text-text-sub leading-relaxed">
-          {analysis.interpretation}
-        </p>
-      </div>
-
-      <ImageArtifactGallery />
-
-      <div className="text-xs text-text-soft space-y-1">
-        <p>파일명: {input?.filename ?? "—"}</p>
-        <p>타입: {input?.mimeType ?? "—"}</p>
-        <p>크기: {input?.fileSize ?? 0} bytes</p>
-      </div>
-
-      <button
-        disabled={!isReportEnabled}
-        onClick={() => {
-          if (!isReportEnabled) return;
-          setStep("report");
-        }}
+      </section>
+      {/* ================= HERO VERDICT ================= */}
+      <section
         className={`
-          w-full py-4 rounded-pill transition
-          ${
-            isReportEnabled
-              ? "bg-primary-dark/80 text-white hover:bg-primary-dark/90 shadow-[0_12px_40px_rgba(53,124,234,0.22)]"
-              : "bg-white/30 text-text-soft cursor-not-allowed"
-          }
+          relative overflow-hidden rounded-[40px] p-12
+          border border-${theme}-500/20
+          bg-gradient-to-br from-${theme}-500/[0.12] via-transparent to-transparent
+          shadow-[0_0_80px_rgba(0,0,0,0.12)]
         `}
       >
-        {isReportEnabled ? "최종 리포트 보기" : "분석 결과 수신 대기 중"}
-      </button>
+        {/* glow */}
+        <div
+          className={`absolute -top-24 -right-24 w-96 h-96 rounded-full blur-3xl opacity-25 bg-${theme}-500`}
+        />
 
-      <button
-        onClick={() => {
-          clearFile();
-          setStep("upload");
-        }}
-        className="text-xs text-text-soft hover:underline"
-      >
-        새로운 이미지 분석
-      </button>
+        <div className="relative z-10 grid md:grid-cols-2 gap-10 items-center">
+          {/* LEFT */}
+          <div>
+            <p
+              className={`text-[11px] font-black tracking-[0.35em] uppercase text-${theme}-500/60`}
+            >
+              FINAL VERDICT
+            </p>
+
+            <h1
+              className={`mt-4 text-6xl font-black tracking-tight ${
+                isFake ? "text-red-500" : "text-emerald-500"
+              }`}
+            >
+              {analysis.label}
+            </h1>
+
+            <p className="mt-6 text-xs text-text-sub max-w-md">
+              AI가 이미지의 패턴, 얼굴 경계, 주목 영역을 종합 분석한 최종 판단
+              결과입니다.
+            </p>
+          </div>
+
+          {/* RIGHT */}
+          <div className="flex justify-center">
+            <ImageRiskRing score={analysis.riskScore} />
+          </div>
+        </div>
+      </section>
+
+      {/* ================= VISUAL METRICS ================= */}
+      <section className="grid md:grid-cols-2 gap-8">
+        <RiskDistributionBar score={analysis.riskScore} />
+        <ConfidenceMeter confidence={analysis.confidence} />
+      </section>
+
+      {/* ================= AI INSIGHT ================= */}
+      <AIInsightCard text={analysis.interpretation} />
+
+      {/* ================= ARTIFACTS ================= */}
+      <ImageArtifactGallery />
     </div>
   );
 }

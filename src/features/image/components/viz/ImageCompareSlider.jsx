@@ -10,6 +10,7 @@ export default function ImageCompareSlider({
   const [ratio, setRatio] = useState(0.5);
 
   const onMove = (e) => {
+    if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const next = Math.min(1, Math.max(0, x / rect.width));
@@ -19,12 +20,32 @@ export default function ImageCompareSlider({
   return (
     <div
       ref={containerRef}
-      className="relative w-full rounded-xl overflow-hidden select-none"
-      onMouseMove={(e) => e.buttons === 1 && onMove(e)}
       onMouseDown={onMove}
+      onMouseMove={(e) => e.buttons === 1 && onMove(e)}
+      className="
+        relative
+        w-full
+        max-w-full
+        aspect-square
+        max-h-[420px]
+        mx-auto
+        overflow-hidden
+        rounded-xl
+        select-none
+        bg-black/5
+      "
     >
       {/* BEFORE */}
-      <img src={beforeUrl} alt="before" className="w-full object-contain" />
+      <img
+        src={beforeUrl}
+        alt={labelBefore}
+        className="
+          absolute inset-0
+          w-full h-full
+          object-contain
+        "
+        draggable={false}
+      />
 
       {/* AFTER */}
       <div
@@ -33,16 +54,28 @@ export default function ImageCompareSlider({
       >
         <img
           src={afterUrl}
-          alt="after"
-          className="w-full h-full object-contain"
+          alt={labelAfter}
+          className="
+            w-full h-full
+            object-contain
+          "
+          draggable={false}
         />
       </div>
 
       {/* Divider */}
       <div
-        className="absolute top-0 bottom-0 w-[2px] bg-white/80"
+        className="absolute top-0 bottom-0 w-[2px] bg-white/80 z-10"
         style={{ left: `${ratio * 100}%` }}
       />
+
+      {/* Handle */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 z-20"
+        style={{ left: `${ratio * 100}%` }}
+      >
+        <div className="w-4 h-4 rounded-full bg-white shadow-md border border-black/10 -translate-x-1/2" />
+      </div>
 
       {/* Labels */}
       <span className="absolute top-2 left-2 text-[10px] font-bold bg-black/50 text-white px-2 py-1 rounded">

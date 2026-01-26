@@ -1,39 +1,49 @@
 export default function ImageHistoryList({ items, onOpen }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {items.map((it) => (
         <div
           key={it.jobUuid}
           className="
-            group
-            rounded-[28px]
-            bg-white/40 backdrop-blur-2xl
+            group relative
+            rounded-[24px]
+            bg-white/45 backdrop-blur-2xl
             border border-white/50
-            px-8 py-6
-            flex items-center justify-between gap-6
-            hover:bg-white/60 hover:-translate-y-1
-            transition-all duration-300 ease-out
-            shadow-sm hover:shadow-xl hover:shadow-primary/5
+            px-6 py-5
+            flex items-center gap-5
+            transition-all duration-300
+            hover:bg-white/65
+            hover:border-primary/30
+            hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.15)]
           "
         >
           {/* LEFT: Info */}
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold text-text-main truncate group-hover:text-primary transition-colors">
+            <p className="text-[15px] font-bold text-text-main truncate">
               {it.filename}
             </p>
-            <p className="text-[11px] text-text-soft/60 mt-1.5 tracking-wider font-medium">
+            <p className="mt-1 text-[10px] tracking-widest text-text-soft/60 uppercase">
               {it.createdAt ? new Date(it.createdAt).toLocaleString() : "—"}
             </p>
           </div>
 
-          {/* CENTER: Status Badges */}
-          <div className="flex items-center gap-3">
-            <span className="px-4 py-1.5 rounded-full bg-white/40 border border-white/60 text-[10px] font-bold text-text-soft uppercase tracking-widest">
+          {/* CENTER: Badges */}
+          <div className="flex items-center gap-2">
+            <span
+              className="
+              px-3 py-1 rounded-full
+              bg-white/50 border border-white/60
+              text-[9px] font-bold tracking-widest text-text-soft uppercase
+            "
+            >
               {it.jobStatus}
             </span>
+
             <span
               className={`
-                px-4 py-1.5 rounded-full border text-[10px] font-black tracking-widest
+                px-3 py-1 rounded-full
+                text-[9px] font-black tracking-widest uppercase
+                border
                 ${
                   it.overallRiskLevel === "HIGH"
                     ? "bg-red-500/10 text-red-500 border-red-500/20"
@@ -50,26 +60,31 @@ export default function ImageHistoryList({ items, onOpen }) {
           {/* RIGHT: Action */}
           <button
             onClick={() => onOpen(it.jobUuid)}
+            aria-label="Open analysis"
             className="
               shrink-0
-              w-12 h-12
+              w-11 h-11
               flex items-center justify-center
               rounded-full
-              bg-primary-dark text-white
-              hover:scale-110 active:scale-95
-              transition-all duration-300
-              shadow-lg shadow-primary-dark/20
+              bg-white/60
+              border border-white/60
+              text-primary-dark
+              transition-all
+              hover:bg-primary/10
+              hover:shadow-[0_0_0_4px_rgba(59,130,246,0.15)]
+              active:scale-95
             "
           >
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className="transition-transform group-hover:translate-x-0.5"
             >
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
