@@ -6,6 +6,8 @@ import { useVideoStore } from "../../../store/videoStore";
 import { VideoPlayer } from "./result/VideoPlayer";
 import { FrameTimeline } from "./result/FrameTimeline";
 import { SuspiciousFrameAnalysis } from "./result/SuspiciousFrameAnalysis";
+import { ModelAnalysis } from "./result/ModelAnalysis"; 
+import { ArtifactDetail } from "./result/ArtifactDetail";  
 
 export function VideoResults() {
     const navigate = useNavigate();
@@ -285,6 +287,21 @@ export function VideoResults() {
                             setSelectedFrameIndex(index);
                             jumpToFrame(suspiciousFrames[index].originalIndex);
                         }}
+                    />
+                )}
+
+                {/* Model Analysis - 추가 */}
+                {results.individualModels && (
+                    <ModelAnalysis
+                        individualModels={results.individualModels}
+                        modelAgreement={results.modelAgreement}
+                    />
+                )}
+
+                {/* Artifact Detail - 추가 */}
+                {results.detectedArtifacts && (
+                    <ArtifactDetail
+                        detectedArtifacts={results.detectedArtifacts}
                     />
                 )}
 
