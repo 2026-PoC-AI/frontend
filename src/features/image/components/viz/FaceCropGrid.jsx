@@ -18,7 +18,7 @@ export default function FaceCropGrid() {
             key={i}
             src={f.url}
             alt={`face-${i}`}
-            className="rounded-lg object-cover border border-white/40 shadow"
+            className="rounded-xl object-cover border border-white/40 shadow "
           />
         ))}
       </div>

@@ -35,7 +35,7 @@ export default function ImagePage() {
       <header className="text-center mb-8 relative shrink-0">
         <button
           onClick={() => nav("/image/history")}
-          className="absolute right-0 top-0 px-6 py-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-primary text-[11px] font-black tracking-widest hover:bg-white/60 transition-all shadow-sm active:scale-95"
+          className="absolute right-0 top-0 px-6 py-2.5 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-primary text-[11px] font-black tracking-widest hover:bg-white/60 transition-all shadow-sm active:scale-95 cursor-pointer"
         >
           HISTORY
         </button>
