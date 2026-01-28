@@ -1,5 +1,116 @@
 @import "tailwindcss";
 
+ /* ================= AtoZ FONT (FULL SUPPORT) ================= */
+
+  /* Thin */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-Thin.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-Thin.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-Thin.otf") format("opentype");
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* ExtraLight */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-ExtraLight.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-ExtraLight.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-ExtraLight.otf") format("opentype");
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Light */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-Light.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-Light.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-Light.otf") format("opentype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Regular */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-Regular.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-Regular.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Medium */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-Medium.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-Medium.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-Medium.otf") format("opentype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* SemiBold */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-SemiBold.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-SemiBold.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-SemiBold.otf") format("opentype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Bold */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-Bold.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-Bold.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-Bold.otf") format("opentype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* ExtraBold */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-ExtraBold.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-ExtraBold.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-ExtraBold.otf") format("opentype");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* Black */
+  @font-face {
+    font-family: "AtoZ";
+    src:
+      url("./assets/fonts/AtoZ-Black.woff2") format("woff2"),
+      url("./assets/fonts/AtoZ-Black.ttf") format("truetype"),
+      url("./assets/fonts/AtoZ-Black.otf") format("opentype");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+
 /* =================================================
    BASE RESET & LAYOUT
    ================================================= */
@@ -11,10 +122,9 @@
     width: 100%;
     height: 100%;
   }
-
-  body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
+body {
+  font-family: "AtoZ", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
     background-color: var(--color-paper);
     color: var(--color-text-main);
     -webkit-font-smoothing: antialiased;
@@ -22,7 +132,6 @@
     overflow-x: hidden;
     overflow-y: auto;
   }
-
   #root {
     min-height: 100%;
   }
@@ -35,6 +144,7 @@
   html {
     -ms-overflow-style: none;
     scrollbar-width: none;
+    font-size: 15px;
   }
 
   body {
@@ -115,12 +225,14 @@
   --glass-bg-blue: rgba(53, 124, 234, 0.15);
   --glass-bg-sky: rgba(75, 198, 233, 0.15);
   --glass-bg-mint: rgba(51, 195, 173, 0.15);
+
+ 
   /* =========================================
      2. TYPOGRAPHY
      ========================================= */
 
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  --font-sans: "AtoZ", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 
   /* HERO FONT (둥글둥글) */
   --font-hero: "Fredoka", system-ui, sans-serif;
