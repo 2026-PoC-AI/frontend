@@ -30,7 +30,7 @@ export default function TextPage() {
     setRequestText(payload.text);
 
     try {
-      const data = await analyzeText(payload); 
+      const data = await analyzeText(payload);
       setResult(data);
       setStatus("success");
     } catch (err) {
@@ -54,11 +54,12 @@ export default function TextPage() {
     <main className="relative px-6 pt-15 pb-32 max-w-6xl mx-auto overflow-hidden">
       {/* 헤더 */}
       <div className="text-center mb-10 animate-fade-up">
-        <h1 className="text-5xl font-extrabold text-text-main mb-4 tracking-tight font-noto">
+        <h1 className="text-4xl font-extrabold text-text-main mb-4 tracking-tight font-noto">
           Text Analysis
         </h1>
         <p className="text-text-sub text-lg font-noto">
-          의심되는 뉴스 텍스트가 조작되었거나 왜곡된 프레이밍을 포함하는지 분석합니다.
+          의심되는 뉴스 텍스트가 조작되었거나 왜곡된 프레이밍을 포함하는지
+          분석합니다.
         </p>
       </div>
 

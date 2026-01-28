@@ -5,6 +5,49 @@ import Image from "../assets/FH_IMAGE.png";
 import Text from "../assets/FH_TEXT.png";
 import Video from "../assets/FH_VIDEO.png";
 
+/* ================= FadeUp Hook ================= */
+function useFadeUp(delay = 0) {
+  const ref = useRef(null);
+  const prevTop = useRef(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    el.style.transitionDelay = `${delay}ms`;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const currentTop = entry.boundingClientRect.top;
+        const scrollingDown = currentTop < prevTop.current;
+
+        prevTop.current = currentTop;
+
+        // 화면 안 + 아래로 이동 → 보여줌
+        if (entry.isIntersecting && scrollingDown) {
+          el.classList.add("opacity-100", "translate-y-0");
+          el.classList.remove("opacity-0", "translate-y-40");
+        }
+
+        // 화면 벗어나거나 위로 → 숨김
+        if (!scrollingDown) {
+          el.classList.add("opacity-0", "translate-y-40");
+          el.classList.remove("opacity-100", "translate-y-0");
+        }
+      },
+      {
+        threshold: 0.3,
+      },
+    );
+
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, [delay]);
+
+  return ref;
+}
+
 export default function MainPage() {
   const navigate = useNavigate();
   const heroRef = useRef(null);
@@ -14,42 +57,55 @@ export default function MainPage() {
   const goDomain = (domain) => {
     navigate(`/${domain}`);
   };
-
   const cards = [
     {
       key: "video",
       title: "Video 분석",
-      desc: "비디오 기능 최종 구현 후 설명 넣어주세요",
+      desc: "영상 내 딥페이크 흔적 자동 분석",
       accentImg: Video,
     },
     {
       key: "image",
       title: "Image 분석",
-      desc: "이미지 기능 최종 구현 후 설명 넣어주세요",
+      desc: "이미지 위·변조 여부와 합성 흔적 탐지",
       accentImg: Image,
     },
     {
       key: "audio",
       title: "Audio 분석",
-      desc: "음성 기능 최종 구현 후 설명 넣어주세요",
+      desc: "음성 변조·합성 여부 AI 기반 판별",
       accentImg: Audio,
     },
     {
       key: "text",
       title: "Text 분석",
-      desc: "텍스트 기능 최종 구현 후 설명 넣어주세요",
+      desc: "뉴스 정보 조작 가능성 분석",
       accentImg: Text,
     },
   ];
 
+  /* Fade Animations */
+  const introAnim = useFadeUp(0);
+  const valueAnim = useFadeUp(100);
+  const whyAnim = useFadeUp(200);
+  const missionAnim = useFadeUp(300);
+
   useEffect(() => {
-    const onScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const el = heroRef.current;
+    if (!el) return;
 
-    window.addEventListener("scroll", onScroll, { passive: true });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsScrolled(!entry.isIntersecting);
+      },
+      {
+        threshold: 0.6,
+      },
+    );
 
-    return () => window.removeEventListener("scroll", onScroll);
+    observer.observe(el);
+
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -102,10 +158,10 @@ export default function MainPage() {
 
       {/* ================= Hero ================= */}
       <main className="px-6 sm:px-10 lg:px-12 pt-20 pb-20 max-w-6xl mx-auto">
-        <div className="flex justify-center mb-50">
+        <div className="flex justify-center mb-40">
           <h1
             ref={heroRef}
-            className="hero-title text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[12.5rem] leading-[0.9] text-transparent select-none"
+            className="hero-title text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[12.5rem] leading-[0.9] select-none"
           >
             {"FAKE HUNTERS".split("").map((char, i) =>
               char === " " ? (
@@ -123,33 +179,164 @@ export default function MainPage() {
           </h1>
         </div>
 
-        <div className="max-w-2xl mx-auto text-center ">
-          <div className="text-2xl tracking-[0.2em] mb-15 text-primary/60">
-            어떤 말을 적어야할까요
+        {/* ================= Intro Section ================= */}
+        <section
+          ref={introAnim}
+          className="
+          max-w-5xl mx-auto text-center relative
+          opacity-0 translate-y-10
+          transition-all duration-1000 ease-out
+        "
+        >
+          {/* Background Aura */}
+          <div
+            className="
+            absolute -top-40 left-1/2 -translate-x-1/2
+            w-[900px] h-[900px]
+            bg-gradient-to-r
+            from-primary-sky/25
+            via-primary-mint/15
+            to-primary-soft/25
+            blur-[220px]
+            rounded-full
+            -z-10
+          "
+          />
+
+          {/* Headline */}
+          {/* <h2
+            className="
+            text-4xl sm:text-5xl md:text-6xl
+            font-bold
+            text-primary-deep/30
+            tracking-tight
+            mb-12
+          "
+          >
+            AI 시대 , 신뢰를 설계하다
+          </h2> */}
+
+          {/* Sub */}
+          <p
+            className="
+            text-xl sm:text-2xl
+            text-primary/55
+            leading-relaxed
+            max-w-2xl
+            mx-auto
+          "
+          >
+            Fake Hunters는 인공지능 기술을 통해
+            <br />
+            디지털 콘텐츠의 진위를 증명합니다.
+          </p>
+        </section>
+
+        {/* ================= Value Proposition ================= */}
+        <section
+          ref={valueAnim}
+          className="
+          max-w-6xl mx-auto px-6 mt-40
+          opacity-0 translate-y-10
+          transition-all duration-1000 ease-out
+        "
+        >
+          <div className="grid md:grid-cols-2 gap-y-16 gap-x-24">
+            {[
+              {
+                title: "멀티모달 AI 분석",
+                desc: "이미지, 영상, 음성, 텍스트 데이터를 통합적으로 분석.",
+              },
+              {
+                title: "딥페이크 패턴 분석",
+                desc: "딥러닝 기반 모델을 통해 위·변조 패턴을 정밀 분석.",
+              },
+              {
+                title: "자동 분석 리포트",
+                desc: "분석 결과를 시각화된 형태로 자동 정리하여 제공.",
+              },
+              {
+                title: "확장 가능한 시스템 구조",
+                desc: "모듈형 아키텍처 기반으로 기능 확장이 용이한 구조.",
+              },
+            ].map((item, i) => (
+              <div key={i} className="relative pl-6">
+                {/* Vertical Line */}
+                <div
+                  className="
+                  absolute left-0 top-1
+                  w-[2px] h-full
+                  bg-primary-dark/40
+                "
+                />
+
+                <h3 className="text-lg font-semibold text-primary-deep/65 mb-3">
+                  {item.title}
+                </h3>
+
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ================= Why Fake Hunters ================= */}
+        <section
+          ref={whyAnim}
+          className="
+          max-w-6xl mx-auto px-6 mt-44
+          opacity-0 translate-y-10
+          transition-all duration-1000 ease-out
+        "
+        >
+          <div className="text-center mb-20">
+            <p className="text-3xl font-extrabold tracking-[0.35em] text-primary/55 mb-4">
+              WHY FAKE HUNTERS
+            </p>
           </div>
 
-          <div className="space-y-6 sm:space-y-8 ">
-            <p className="text-md leading-relaxed text-text-main/80 mb-15">
-              열심히 하고 메인 글을 나중에 적어보아요 우리
-              <br />
-              파이팅파이팅!
-              <br />
-              메인 이 글 작성은 제일 나중에!
-            </p>
+          <div className="grid md:grid-cols-3 gap-x-20 gap-y-16">
+            {[
+              {
+                title: "정확도 중심 설계",
+                desc: "실제 딥페이크 데이터 기반 학습 모델 적용",
+              },
+              {
+                title: "고성능 모델 파이프라인",
+                desc: "딥러닝 기반 분석 모델을 최적화하여 효율적인 처리.",
+              },
+              {
+                title: "설명 가능한 결과",
+                desc: "분석 근거·신뢰도 시각화 제공",
+              },
+            ].map((item, i) => (
+              <div key={i} className="text-center">
+                <div
+                  className="
+                    w-10 h-10
+                    mx-auto mb-6
+                    rounded-full
+                    bg-primary/10
+                    flex items-center justify-center
+                    text-sm font-bold text-primary/70
+                  "
+                >
+                  {i + 1}
+                </div>
 
-            <p className="text-md leading-relaxed text-text-main/80">
-              파이썬 매우 이지.
-              <br />
-              우린 모두 해낼 수 있어요
-              <br />
-              (메인 디자인 바꾸실거면 바꾸셔도 돼요!)
-              <br />
-              헌터 X 걸즈
-              <br />
-              소희 / 소영 / 하영 / 희정
-            </p>
+                <h4 className="font-semibold text-xl text-primary-dark/75 mb-4">
+                  {item.title}
+                </h4>
+
+                <p className="text-md text-black/55 leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
       </main>
 
       {/* ================= Domain Cards ================= */}
@@ -180,6 +367,47 @@ export default function MainPage() {
               goDomain={goDomain}
             />
           ))}
+        </div>
+      </section>
+
+      {/* ================= Mission & Team ================= */}
+      <section
+        ref={missionAnim}
+        className="
+        max-w-5xl mx-auto px-6 mb-44 text-center
+        opacity-0 translate-y-10
+        transition-all duration-1000 ease-out
+      "
+      >
+        <p
+          className="
+          text-md
+          text-primary-deep/50
+          
+          leading-relaxed
+          max-w-xl
+          mx-auto
+          mb-30
+        "
+        >
+          투명한 AI 기술로
+          <br />
+          허위 정보와 디지털 범죄를 예방하고 신뢰 가능한 온라인 환경을
+          구축합시다
+        </p>
+
+        {/* Divider */}
+        <div className="w-30 h-[1px] bg-primary-light/70 mx-auto mb-30" />
+
+        <p className="text-md font-extrabold tracking-[0.35em] text-primary-dark/55 mb-6">
+          FAKE HUNTERS TEAM
+        </p>
+
+        <div className="flex justify-center gap-10 text-sm text-primary/55">
+          <span>@SOHEE</span>
+          <span>@HEEJEONG</span>
+          <span>@HAYOUNG</span>
+          <span>@SOYOUNG</span>
         </div>
       </section>
     </div>
@@ -222,6 +450,7 @@ function FadeUpCard({
       onMouseEnter={() => setHoveredDomain(card.key)}
       onMouseLeave={() => setHoveredDomain(null)}
       className="
+            group
             snap-center
             min-w-[85%] sm:min-w-0
 
@@ -232,8 +461,11 @@ function FadeUpCard({
             flex flex-col
 
             backdrop-blur-xl
-            bg-white/55
+            bg-white/40
             border border-white/50
+
+            shadow-[0_18px_45px_-16px_rgba(0,0,0,0.05)]
+            hover:shadow-[0_28px_60px_-18px_rgba(0,0,0,0.08)]
 
             transition-all duration-2000 ease-out
             opacity-0 translate-y-8
@@ -259,22 +491,23 @@ function FadeUpCard({
         {card.title}
       </h3>
 
-      <p className="text-sm text-text-main/60 leading-relaxed mb-10">
+      <p className="text-sm text-text-main/60 leading-relaxed text-right mb-10">
         {card.desc}
       </p>
 
       <div className="mt-auto flex justify-end">
         <button
           className="
-            group flex items-center gap-2
-            text-body-md font-medium
-            tracking-wide text-primary
+            group flex items-center gap-3
+            text-body-md font-extrabold
+            tracking-wide text-primary-deep/60
             transition-all duration-300
+            
           "
         >
           <span
             className="
-              w-2 h-2 rounded-full bg-primary-sky
+              w-2.5 h-2.5 rounded-full bg-primary-sky
               opacity-0 -translate-x-1
               transition-all duration-300
               group-hover:opacity-100 group-hover:translate-x-0

@@ -1,8 +1,17 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-    Video, X, Clock, AlertTriangle, Loader2,
-    Upload, Film, ScanFace, Brain, FileCheck, CheckCircle 
+import {
+  Video,
+  X,
+  Clock,
+  AlertTriangle,
+  Loader2,
+  Upload,
+  Film,
+  ScanFace,
+  Brain,
+  FileCheck,
+  CheckCircle,
 } from "lucide-react";
 import { analyzeVideo, getAnalysisProgress } from "../../../api/videoApi";
 
@@ -15,11 +24,11 @@ export function VideoUpload() {
   const [error, setError] = useState(null);
   const [videoMetadata, setVideoMetadata] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
-  
+
   const [progress, setProgress] = useState(0);
   const [progressStage, setProgressStage] = useState("");
   const [progressDetail, setProgressDetail] = useState("");
-  
+
   const pollingIntervalRef = useRef(null);
   const currentAnalysisIdRef = useRef(null);
   const fileRef = useRef(null);
@@ -54,8 +63,13 @@ export function VideoUpload() {
   const processFile = (selectedFile) => {
     setError(null);
 
-    if (!selectedFile.type.includes("mp4") && !selectedFile.name.endsWith(".mp4")) {
-      setError("현재 MP4 형식만 지원됩니다. 다른 형식의 파일을 MP4로 변환해주세요.");
+    if (
+      !selectedFile.type.includes("mp4") &&
+      !selectedFile.name.endsWith(".mp4")
+    ) {
+      setError(
+        "현재 MP4 형식만 지원됩니다. 다른 형식의 파일을 MP4로 변환해주세요.",
+      );
       return;
     }
 
@@ -118,14 +132,17 @@ export function VideoUpload() {
 
       video.currentTime = 0;
       video.muted = true;
-      video.play().then(() => {
-        setTimeout(() => {
-          video.pause();
-          generateThumbnail();
-        }, 100);
-      }).catch(() => {
-        URL.revokeObjectURL(videoUrl);
-      });
+      video
+        .play()
+        .then(() => {
+          setTimeout(() => {
+            video.pause();
+            generateThumbnail();
+          }, 100);
+        })
+        .catch(() => {
+          URL.revokeObjectURL(videoUrl);
+        });
     };
 
     video.src = videoUrl;
@@ -139,75 +156,84 @@ export function VideoUpload() {
     currentAnalysisIdRef.current = null;
   }, []);
 
-  const startProgressPolling = useCallback((analysisId) => {
-    currentAnalysisIdRef.current = analysisId;
-    
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-    }
+  const startProgressPolling = useCallback(
+    (analysisId) => {
+      currentAnalysisIdRef.current = analysisId;
 
-    const pollProgress = async () => {
-      try {
-        const progressData = await getAnalysisProgress(analysisId);
-        
-        if (!progressData) return;
-        
-        setProgress(progressData.progress || 0);
-        setProgressStage(progressData.stage || "");
-        setProgressDetail(progressData.detail || "");
-
-        if (progressData.stage === "completed" && progressData.progress === 100) {
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-          
-          try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-            const response = await fetch(`${apiUrl}/api/video/analysis/${analysisId}`);
-            
-            if (!response.ok) {
-              throw new Error("분석 결과 조회 실패");
-            }
-            
-            const result = await response.json();
-            
-            setUploading(false);
-            
-            navigate("/video/results", {
-              state: {
-                file: {
-                  name: fileRef.current.name,
-                  size: fileRef.current.size,
-                },
-                fileFromState: fileRef.current,
-                result,
-              },
-            });
-          } catch (err) {
-            console.error("결과 조회 실패:", err);
-            setError("분석 결과를 불러오는데 실패했습니다.");
-            setUploading(false);
-          }
-        }
-        
-        if (progressData.stage === "failed") {
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-          
-          setError("영상 분석에 실패했습니다.");
-          setUploading(false);
-        }
-      } catch (err) {
-        console.error("진행률 조회 실패:", err);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
       }
-    };
 
-    pollProgress();
-    pollingIntervalRef.current = setInterval(pollProgress, 1000);
-  }, [navigate]);
+      const pollProgress = async () => {
+        try {
+          const progressData = await getAnalysisProgress(analysisId);
+
+          if (!progressData) return;
+
+          setProgress(progressData.progress || 0);
+          setProgressStage(progressData.stage || "");
+          setProgressDetail(progressData.detail || "");
+
+          if (
+            progressData.stage === "completed" &&
+            progressData.progress === 100
+          ) {
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+
+            try {
+              const apiUrl =
+                import.meta.env.VITE_API_URL || "http://localhost:8080";
+              const response = await fetch(
+                `${apiUrl}/api/video/analysis/${analysisId}`,
+              );
+
+              if (!response.ok) {
+                throw new Error("분석 결과 조회 실패");
+              }
+
+              const result = await response.json();
+
+              setUploading(false);
+
+              navigate("/video/results", {
+                state: {
+                  file: {
+                    name: fileRef.current.name,
+                    size: fileRef.current.size,
+                  },
+                  fileFromState: fileRef.current,
+                  result,
+                },
+              });
+            } catch (err) {
+              console.error("결과 조회 실패:", err);
+              setError("분석 결과를 불러오는데 실패했습니다.");
+              setUploading(false);
+            }
+          }
+
+          if (progressData.stage === "failed") {
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+            }
+
+            setError("영상 분석에 실패했습니다.");
+            setUploading(false);
+          }
+        } catch (err) {
+          console.error("진행률 조회 실패:", err);
+        }
+      };
+
+      pollProgress();
+      pollingIntervalRef.current = setInterval(pollProgress, 1000);
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     return () => {
@@ -226,13 +252,13 @@ export function VideoUpload() {
 
     try {
       const result = await analyzeVideo(file);
-      
+
       if (result.analysisId) {
         if (result.status === "PROCESSING") {
           startProgressPolling(result.analysisId);
           return;
         }
-        
+
         if (result.status === "COMPLETED") {
           setUploading(false);
           navigate("/video/results", {
@@ -252,7 +278,9 @@ export function VideoUpload() {
       }
     } catch (err) {
       console.error("분석 요청 실패:", err);
-      setError(err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.");
+      setError(
+        err instanceof Error ? err.message : "분석 중 오류가 발생했습니다.",
+      );
       setUploading(false);
       stopProgressPolling();
     }
@@ -282,7 +310,7 @@ export function VideoUpload() {
         <p className="text-[10px] font-black tracking-[0.4em] text-primary/60 mb-2 uppercase">
           VIDEO Inspector
         </p>
-        <h1 className="text-4xl md:text-5xl font-black text-text-main mb-3 tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-black text-text-main mb-3 tracking-tight">
           Video Deepfake Detection
         </h1>
         <p className="text-text-sub max-w-lg mx-auto leading-relaxed opacity-70 text-sm">
@@ -381,7 +409,9 @@ export function VideoUpload() {
                             <span>•</span>
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              <span>{formatDuration(videoMetadata.duration)}</span>
+                              <span>
+                                {formatDuration(videoMetadata.duration)}
+                              </span>
                             </div>
                           </>
                         )}
@@ -405,7 +435,9 @@ export function VideoUpload() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium text-text-main">진행률</span>
-                      <span className="text-primary font-bold">{progress}%</span>
+                      <span className="text-primary font-bold">
+                        {progress}%
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div
@@ -417,18 +449,46 @@ export function VideoUpload() {
 
                   <div className="space-y-3">
                     {[
-                      { key: "video_upload", label: "영상 업로드 중", icon: Upload },
-                      { key: "frame_extraction", label: "프레임 추출 중", icon: Film },
-                      { key: "face_detection", label: "얼굴 검출 중", icon: ScanFace },
-                      { key: "ai_analysis", label: "AI 모델 분석 중", icon: Brain },
-                      { key: "result_generation", label: "결과 생성 중", icon: FileCheck },
+                      {
+                        key: "video_upload",
+                        label: "영상 업로드 중",
+                        icon: Upload,
+                      },
+                      {
+                        key: "frame_extraction",
+                        label: "프레임 추출 중",
+                        icon: Film,
+                      },
+                      {
+                        key: "face_detection",
+                        label: "얼굴 검출 중",
+                        icon: ScanFace,
+                      },
+                      {
+                        key: "ai_analysis",
+                        label: "AI 모델 분석 중",
+                        icon: Brain,
+                      },
+                      {
+                        key: "result_generation",
+                        label: "결과 생성 중",
+                        icon: FileCheck,
+                      },
                     ].map((step) => {
-                      const stageOrder = ["video_upload", "frame_extraction", "face_detection", "ai_analysis", "result_generation"];
+                      const stageOrder = [
+                        "video_upload",
+                        "frame_extraction",
+                        "face_detection",
+                        "ai_analysis",
+                        "result_generation",
+                      ];
                       const currentIndex = stageOrder.indexOf(progressStage);
                       const stepIndex = stageOrder.indexOf(step.key);
-                      
+
                       const isActive = progressStage === step.key;
-                      const isCompleted = progressStage === "completed" || currentIndex > stepIndex;
+                      const isCompleted =
+                        progressStage === "completed" ||
+                        currentIndex > stepIndex;
 
                       const StepIcon = step.icon;
 
@@ -439,8 +499,8 @@ export function VideoUpload() {
                             isActive
                               ? "bg-primary/10 border-l-4 border-primary"
                               : isCompleted
-                              ? "bg-green-50 border-l-4 border-green-500"
-                              : "bg-gray-50"
+                                ? "bg-green-50 border-l-4 border-green-500"
+                                : "bg-gray-50"
                           }`}
                         >
                           <div
@@ -448,8 +508,8 @@ export function VideoUpload() {
                               isActive
                                 ? "bg-primary text-white"
                                 : isCompleted
-                                ? "bg-green-500 text-white"
-                                : "bg-gray-300 text-gray-600"
+                                  ? "bg-green-500 text-white"
+                                  : "bg-gray-300 text-gray-600"
                             }`}
                           >
                             {isCompleted ? (
@@ -466,8 +526,8 @@ export function VideoUpload() {
                                 isActive
                                   ? "text-primary"
                                   : isCompleted
-                                  ? "text-green-600"
-                                  : "text-gray-500"
+                                    ? "text-green-600"
+                                    : "text-gray-500"
                               }`}
                             >
                               {step.label}

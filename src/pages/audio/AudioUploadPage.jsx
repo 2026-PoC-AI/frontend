@@ -68,7 +68,7 @@ export default function AudioUploadPage() {
         <p className="text-[10px] font-black tracking-[0.4em] text-primary/60 mb-2">
           AUDIO INSPECTOR
         </p>
-        <h1 className="text-4xl md:text-5xl font-black text-text-main mb-3">
+        <h1 className="text-3xl md:text-4xl font-black text-text-main mb-3">
           Voice Authenticity Scan
         </h1>
         <p className="text-sm text-text-sub mb-10">

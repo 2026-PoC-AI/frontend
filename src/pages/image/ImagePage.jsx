@@ -42,7 +42,7 @@ export default function ImagePage() {
         <p className="text-[10px] font-black tracking-[0.4em] text-primary/60 mb-2 uppercase">
           IMAGE Inspector
         </p>
-        <h1 className="text-4xl md:text-5xl font-black text-text-main mb-3 tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-black text-text-main mb-3 tracking-tight">
           Image Analysis
         </h1>
         <p className="text-text-sub max-w-lg mx-auto leading-relaxed opacity-70 text-sm">
